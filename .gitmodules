@@ -1,0 +1,12 @@
+[submodule "Platform/External/glfw"]
+	path = Platform/External/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "Platform/External/entt"]
+	path = Platform/External/entt
+	url = https://github.com/skypjack/entt.git
+[submodule "Platform/External/glm"]
+	path = Platform/External/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "Platform/External/spdlog"]
+	path = Platform/External/spdlog
+	url = https://github.com/gabime/spdlog.git
