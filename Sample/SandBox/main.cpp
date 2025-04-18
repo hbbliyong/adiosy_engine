@@ -4,6 +4,7 @@
 #include "Platform/AdGraphicContext.h"
 #include "Platform/Graphic/AdVKGraphicContext.h"
 #include "Platform/Graphic/AdVKDevice.h"
+#include "Platform/Graphic/AdVKSwapchain.h"
 int main()
 {
 	ade::AdLog::Init();
@@ -15,6 +16,8 @@ int main()
 	auto window = ade::AdWindow::Create(800, 600, "SandBox");
 	auto graphicContext = ade::AdGraphicContext::Create(window.get());
 	auto device = std::make_shared<ade::AdVKDevice>(dynamic_cast<ade::AdVKGraphicContext*>(graphicContext.get()), 1, 1);
+	auto swapchain = std::make_shared<ade::AdVKSwapchain>(dynamic_cast<ade::AdVKGraphicContext*>(graphicContext.get()), device.get());
+	swapchain->ReCreate();
 	while (!window->ShouldClose())
 	{
 		window->PollEvent();

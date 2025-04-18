@@ -142,6 +142,7 @@ namespace ade
 		CALL_VK(vkCreateInstance(&instanceInfo, nullptr, &m_Instance));
 		LOG_T("{0} : instance : {1}", __FUNCTION__, (void*)m_Instance);
 	}
+
 	void AdVKGraphicContext::CreateSurface(AdWindow* window)
 	{
 		if (!window)
@@ -222,7 +223,7 @@ namespace ade
 					break;
 				}
 
-				//2.preset family
+				//2.present family
 				VkBool32 bSupportSurface;
 				vkGetPhysicalDeviceSurfaceSupportKHR(phyDevices[i], j, m_Surface, &bSupportSurface);
 				if (bSupportSurface)

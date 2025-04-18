@@ -12,7 +12,8 @@ namespace ade
 #endif
 	};
 
-	AdVKDevice::AdVKDevice(AdVKGraphicContext* context, uint32_t graphicQueueCount, uint32_t presentQueueCount, const AdVkSettings& settings)
+	AdVKDevice::AdVKDevice(AdVKGraphicContext* context, uint32_t graphicQueueCount, uint32_t presentQueueCount, const AdVkSettings& settings):
+		m_setttings(settings)
 	{
 		if (!context)
 		{
