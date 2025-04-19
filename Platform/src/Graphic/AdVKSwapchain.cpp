@@ -58,7 +58,7 @@ namespace ade
 			.queueFamilyIndexCount = queueFamilyIndexCount,
 			.pQueueFamilyIndices = pQueueFamilyIndices,
 			.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
-			.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
+			.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
 			.presentMode = m_surfaceInfo.presentMode,
 			.clipped = VK_FALSE,
 			.oldSwapchain = oldSwapchain

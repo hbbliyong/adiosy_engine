@@ -20,6 +20,14 @@ namespace ade
 		AdVKSwapchain(AdVKGraphicContext* context, AdVKDevice* device);
 		~AdVKSwapchain();
 		bool ReCreate();
+
+		const std::vector<VkImage>& GetImages() const
+		{
+			return  m_images;
+		}
+
+		uint32_t GetWidth()const { return m_surfaceInfo.capabilities.currentExtent.width; }
+		uint32_t GetHeight()const { return m_surfaceInfo.capabilities.currentExtent.height; }
 	private:
 		void SetupSurfaceCapabilities();
 	private:

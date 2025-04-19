@@ -5,6 +5,9 @@
 #include "Platform/Graphic/AdVKGraphicContext.h"
 #include "Platform/Graphic/AdVKDevice.h"
 #include "Platform/Graphic/AdVKSwapchain.h"
+#include "Platform/Graphic/AdVKRenderPass.h"
+#include "Platform/Graphic/AdVKFrameBuffer.h"
+#include <algorithm>
 int main()
 {
 	ade::AdLog::Init();
@@ -18,6 +21,15 @@ int main()
 	auto device = std::make_shared<ade::AdVKDevice>(dynamic_cast<ade::AdVKGraphicContext*>(graphicContext.get()), 1, 1);
 	auto swapchain = std::make_shared<ade::AdVKSwapchain>(dynamic_cast<ade::AdVKGraphicContext*>(graphicContext.get()), device.get());
 	swapchain->ReCreate();
+
+	auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get());
+	std::vector<VkImage> swapchainImages = swapchain->GetImages();
+	std::vector<std::shared_ptr<ade::AdVKFramebuffer>> framebuffers;
+	std::ranges::transform(swapchainImages, std::back_inserter(framebuffers), [&](VkImage& image) {
+		std::vector<VkImage> images = { image };
+		return std::make_shared<ade::AdVKFramebuffer>(device.get(), renderPass.get(), images, swapchain->GetWidth(), swapchain->GetHeight());
+		});
+
 	while (!window->ShouldClose())
 	{
 		window->PollEvent();
