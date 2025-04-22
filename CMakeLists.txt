@@ -11,7 +11,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 #resource dir configuration
-add_definitions(-DAD_DEFINE_RES_ROOT=\"${CMAAKE_SOURCE_DIR}/Resource/\")
+add_definitions(-DAD_DEFINE_RES_ROOT_DIR=\"${CMAKE_SOURCE_DIR}/Resource/\")
 set(AD_DEFINE_RES_ROOT_DIR "${CMAKE_SOURCE_DIR}/Resource/")
 
 if(WIN32)
@@ -30,10 +30,12 @@ else()
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-#include(SPIR-V)
+include(SPIR-V)
 
 
 add_subdirectory(Platform)
 add_subdirectory(Core)
 # add_subdirectory(Editor)
 add_subdirectory(Sample)
+
+

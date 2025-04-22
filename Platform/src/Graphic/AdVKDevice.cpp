@@ -113,11 +113,24 @@ namespace ade
 			vkGetDeviceQueue(m_Device, presentQueueFamilyInfo.queueFamilyIndex, i, &queue);
 			m_PresentQueues.push_back(std::make_shared<AdVKQueue>(presentQueueFamilyInfo.queueFamilyIndex, i, queue, true));
 		}
+		CreatePipelineCache();
 	}
 
 	AdVKDevice::~AdVKDevice()
 	{
 		vkDeviceWaitIdle(m_Device);
+		VK_D(PipelineCache, m_Device, mPipelineCache);
 		vkDestroyDevice(m_Device, nullptr);
+	}
+	void AdVKDevice::CreatePipelineCache()
+	{
+		VkPipelineCacheCreateInfo createInfo = {
+		.sType=VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0,
+//.initialDataSize=,
+//.pInitialData=
+		};
+		CALL_VK(vkCreatePipelineCache(m_Device, &createInfo, nullptr, &mPipelineCache));
 	}
 }

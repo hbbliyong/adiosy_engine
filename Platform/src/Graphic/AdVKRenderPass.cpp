@@ -1,5 +1,6 @@
 #include "Graphic/AdVKRenderPass.h"
 #include "Graphic/AdVKDevice.h"
+#include "Graphic/AdVKFrameBuffer.h"
 namespace ade
 {
 	AdVKRenderPass::AdVKRenderPass(AdVKDevice* device, const std::vector<Attachment>& attachments /*= {}*/, const std::vector<RenderSubPass>& renderSubPasses /*= {}*/)
@@ -129,5 +130,26 @@ namespace ade
 	AdVKRenderPass::~AdVKRenderPass()
 	{
 		VK_D(RenderPass, mDevice->GetHandle(), mHandle);
+	}
+	void AdVKRenderPass::Begin(VkCommandBuffer cmdBuffer, AdVKFramebuffer* frameBuffer, const std::vector<VkClearValue>& clearValues) const
+	{
+		VkRect2D renderArea = {
+			.offset={0,0},
+			.extent={frameBuffer->GetWidth(),frameBuffer->GetHeight()}
+		};
+		VkRenderPassBeginInfo beginInfo = {
+			.sType=VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+			.pNext=nullptr,
+			.renderPass=mHandle,
+			.framebuffer=frameBuffer->GetHandle(),
+			.renderArea= renderArea,
+			.clearValueCount=static_cast<uint32_t>(clearValues.size()),
+			.pClearValues=clearValues.data()
+		};
+		vkCmdBeginRenderPass(cmdBuffer, &beginInfo,  VK_SUBPASS_CONTENTS_INLINE);
+	}
+	void AdVKRenderPass::End(VkCommandBuffer cmdBuffer) const
+	{
+		vkCmdEndRenderPass(cmdBuffer);
 	}
 }

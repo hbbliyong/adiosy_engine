@@ -5,11 +5,29 @@ file(GLOB PRIVATE_HEADER "src/*.h*")
 
 file(GLOB SOURCES "*.c*")
 
-add_executable(${LIBRARY_NAME} ${PUBLIC_HEADERS} ${PRIVATE_HEADER} ${SOURCES})
+#shader files
+set (SHADERS 
+    00_hello_triangle.vert
+    00_hello_triangle.frag
+)
+
+spirv_shaders(
+        SHADER_HEADERS
+        SPIRV_VERSION
+        1.0 # Currently targeting Vulkan 1.0
+        SOURCES
+        ${SHADERS}
+)
+
+add_executable(${LIBRARY_NAME} ${PUBLIC_HEADERS} ${PRIVATE_HEADER} ${SOURCES} ${SHADER_HEADERS})
 target_link_libraries(${LIBRARY_NAME}
     PRIVATE
         # ${CMAKE_CURRENT_SOURCE_DIR}
         adiosy_core
         adiosy_platform
 )
+
+# set_target_properties(${LIBRARY_NAME} PROPERTIES
+#     VS_DEBUGGER_WORKING_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
+# )
 

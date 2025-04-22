@@ -15,6 +15,10 @@ namespace ade
 		~AdVKFramebuffer();
 
 		bool ReCreate(const std::vector<VkImage>& images, uint32_t width, uint32_t height);
+
+		uint32_t GetWidth()const { return mWidth; }
+		uint32_t GetHeight()const { return mHeight; }
+		VkFramebuffer GetHandle()const { return mHandle; }
 	private:
 		VkFramebuffer mHandle=VK_NULL_HANDLE;
 		AdVKDevice* mDevice;

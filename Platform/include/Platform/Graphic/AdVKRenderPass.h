@@ -5,7 +5,7 @@
 namespace ade
 {
 	class AdVKDevice;
-
+	class AdVKFramebuffer;
 	struct Attachment
 	{
 		VkFormat format = VK_FORMAT_UNDEFINED;
@@ -33,7 +33,11 @@ namespace ade
 		AdVKRenderPass(AdVKDevice* device, const std::vector<Attachment>& attachments = {}, const std::vector<RenderSubPass>& renderSubPasses = {});
 		~AdVKRenderPass();
 
+		void Begin(VkCommandBuffer cmdBuffer,AdVKFramebuffer * frameBuffer,const std::vector<VkClearValue> &clearValues) const;
+		void End(VkCommandBuffer cmdBuffer) const;
+
 		VkRenderPass GetHandle()const { return mHandle; }
+
 	private:
 		VkRenderPass mHandle = VK_NULL_HANDLE;
 		AdVKDevice* mDevice;

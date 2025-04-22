@@ -1,5 +1,6 @@
 #include "Graphic/AdVKSwapchain.h"
 #include "Graphic/AdVKDevice.h"
+#include "Graphic/AdVKQueue.h"
 #include "Graphic/AdVKGraphicContext.h"
 #include <algorithm>
 namespace ade
@@ -78,6 +79,28 @@ namespace ade
 		 ret = vkGetSwapchainImagesKHR(m_Device->GetHandle(), m_Handle, &swapchainImageCount, m_images.data());
 
 		return ret == VK_SUCCESS;
+	}
+
+	int32_t AdVKSwapchain::AcquireImage() const
+	{
+		uint32_t imageIndex;
+		CALL_VK(vkAcquireNextImageKHR(m_Device->GetHandle(), m_Handle, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex));
+		return imageIndex;
+	}
+
+	void AdVKSwapchain::Present(int32_t imageIndex) const
+	{
+		VkPresentInfoKHR presentInfo = {
+			.sType=VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+			.pNext=nullptr,
+			.waitSemaphoreCount=0,
+			.pWaitSemaphores=nullptr,
+			.swapchainCount=1,
+			.pSwapchains=&m_Handle,
+			.pImageIndices=reinterpret_cast<const uint32_t*>(&imageIndex)
+		};
+		CALL_VK(vkQueuePresentKHR(m_Device->GetFirstPresentQueue()->GetHandle(), &presentInfo));
+		m_Device->GetFirstPresentQueue()->WaitIdle();
 	}
 
 	void AdVKSwapchain::SetupSurfaceCapabilities()
