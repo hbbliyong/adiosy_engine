@@ -50,12 +50,44 @@ int main()
 	std::vector<VkClearValue> clearValues = {
 		{.1f,.2f,.3f,1.0f}
 	};
+
+	//1.acquire swapchain image Semaphore
+	//2.submit Semaphore
+	//3.frame  fence
+	const uint32_t numBuffer = 2;
+	std::vector<VkSemaphore> imageAvailableSemaphores(numBuffer);
+	std::vector<VkSemaphore> submitedSemaphores(numBuffer);
+	std::vector<VkFence> frameFences(numBuffer);
+
+	VkSemaphoreCreateInfo semaphoreInfo = {
+		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = 0
+	};
+
+	VkFenceCreateInfo fenceInfo = {
+		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+		.pNext = nullptr,
+		.flags = VK_FENCE_CREATE_SIGNALED_BIT
+	};
+
+
+	for (int i=0;i<numBuffer;i++)
+	{
+		CALL_VK(vkCreateSemaphore(device->GetHandle(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]));
+		CALL_VK(vkCreateSemaphore(device->GetHandle(), &semaphoreInfo, nullptr, &submitedSemaphores[i]));
+		CALL_VK(vkCreateFence(device->GetHandle(), &fenceInfo, nullptr, &frameFences[i]));
+	}
+	uint32_t currentBuffer = 0;
+
 	while (!window->ShouldClose())
 	{
 		window->PollEvent();
+		vkWaitForFences(device->GetHandle(), 1, &frameFences[currentBuffer], VK_FALSE, UINT64_MAX);
+		vkResetFences(device->GetHandle(), 1, &frameFences[currentBuffer]);
 		//1.acquire swapchain image
 		//int32_t imageIndex;
-		auto imageIndex =swapchain->AcquireImage();
+		auto imageIndex =swapchain->AcquireImage(imageAvailableSemaphores[currentBuffer]);
 		//2.begin cmdbuffer
 		ade::AdVKCommandPool::BeginCommandBuffer(cmdBuffers[imageIndex]);
 		//3.begin renderpass,bind framebuffer
@@ -86,11 +118,22 @@ int main()
 		ade::AdVKCommandPool::EndCommandBuffer(cmdBuffers[imageIndex]);
 		// 8.submit cmdbuffer to queue
 		
-		graphicQueue->Submit({ cmdBuffers[imageIndex] });
-		graphicQueue->WaitIdle();
+		graphicQueue->Submit({ cmdBuffers[imageIndex] },{imageAvailableSemaphores[currentBuffer]}, 
+			{submitedSemaphores[currentBuffer]},frameFences[currentBuffer]);
+		//graphicQueue->WaitIdle();
 		// 9.present
-		swapchain->Present(imageIndex);
+		swapchain->Present(imageIndex, { submitedSemaphores[currentBuffer] });
 		window->SwapBuffer();
+		currentBuffer = (currentBuffer + 1) % numBuffer;
 	}
-	std::cout << "hello world" << std::endl;
+
+	for (int i = 0;	 i < numBuffer; i++)
+	{
+		vkDeviceWaitIdle(device->GetHandle());
+		VK_D(Semaphore, device->GetHandle(), imageAvailableSemaphores[i]);
+		VK_D(Semaphore, device->GetHandle(), submitedSemaphores[i]);
+		VK_D(Fence, device->GetHandle(), frameFences[i]);
+	}
+	return EXIT_SUCCESS;
+
 }

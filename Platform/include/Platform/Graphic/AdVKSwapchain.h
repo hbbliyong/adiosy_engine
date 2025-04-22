@@ -20,8 +20,8 @@ namespace ade
 		AdVKSwapchain(AdVKGraphicContext* context, AdVKDevice* device);
 		~AdVKSwapchain();
 		bool ReCreate();
-		int32_t AcquireImage()const;
-		void Present(int32_t imageIndex)const;
+		int32_t AcquireImage(VkSemaphore semaphore, VkFence fence=VK_NULL_HANDLE)const;
+		void Present(int32_t imageIndex, const std::vector<VkSemaphore>& waitSemaphores)const;
 		const std::vector<VkImage>& GetImages() const
 		{
 			return  m_images;

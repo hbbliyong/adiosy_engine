@@ -12,20 +12,21 @@ namespace ade
 	{
 		vkQueueWaitIdle(m_Queue);
 	}
-	void AdVKQueue::Submit(std::vector<VkCommandBuffer> cmdBuffers)
+	void AdVKQueue::Submit(std::vector<VkCommandBuffer> cmdBuffers, const std::vector<VkSemaphore>& waitSemaphores,
+		const std::vector<VkSemaphore>& signalSemaphores,VkFence fence)
 	{
 		VkPipelineStageFlags waitDstStageMask[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		VkSubmitInfo submitInfo = {
 			.sType=VK_STRUCTURE_TYPE_SUBMIT_INFO,
 			.pNext=nullptr,
-			.waitSemaphoreCount=0,
-			.pWaitSemaphores=nullptr,
+			.waitSemaphoreCount=static_cast<uint32_t>(waitSemaphores.size()),
+			.pWaitSemaphores=waitSemaphores.data(),
 			.pWaitDstStageMask= waitDstStageMask,
 			.commandBufferCount=static_cast<uint32_t>(cmdBuffers.size()),
 			.pCommandBuffers=cmdBuffers.data(),
-			.signalSemaphoreCount=0,
-			.pSignalSemaphores=nullptr
+			.signalSemaphoreCount=static_cast<uint32_t>(signalSemaphores.size()),
+			.pSignalSemaphores=signalSemaphores.data()
 		};
-		CALL_VK(vkQueueSubmit(m_Queue, 1, &submitInfo, VK_NULL_HANDLE));
+		CALL_VK(vkQueueSubmit(m_Queue, 1, &submitInfo, fence));
 	}
 }
