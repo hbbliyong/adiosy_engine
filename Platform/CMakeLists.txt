@@ -36,6 +36,10 @@ option(GLFW_INSTALL OFF)
 add_subdirectory(External/glfw)
 target_link_libraries(${LIBRARY_NAME} PRIVATE glfw)
 
+#glm
+add_subdirectory(External/glm)
+target_link_libraries(${LIBRARY_NAME} PUBLIC glm)
+
 #Vulkan
 find_package(Vulkan REQUIRED)
 if(Vulkan_FOUND)

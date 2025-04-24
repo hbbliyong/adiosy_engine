@@ -14,6 +14,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 add_definitions(-DAD_DEFINE_RES_ROOT_DIR=\"${CMAKE_SOURCE_DIR}/Resource/\")
 set(AD_DEFINE_RES_ROOT_DIR "${CMAKE_SOURCE_DIR}/Resource/")
 
+if(MSVC)
+    add_compile_options(/wd4828)
+endif()
+
 if(WIN32)
     message("Platform: Windows")
     add_definitions(-DAD_ENGINE_PLATFORM_WIN32)

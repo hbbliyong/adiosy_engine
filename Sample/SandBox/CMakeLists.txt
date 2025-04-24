@@ -9,6 +9,8 @@ file(GLOB SOURCES "*.c*")
 set (SHADERS 
     00_hello_triangle.vert
     00_hello_triangle.frag
+    00_hello_buffer.vert
+    00_hello_buffer.frag
 )
 
 spirv_shaders(
@@ -19,7 +21,7 @@ spirv_shaders(
         ${SHADERS}
 )
 
-add_executable(${LIBRARY_NAME} ${PUBLIC_HEADERS} ${PRIVATE_HEADER} ${SOURCES} ${SHADER_HEADERS})
+add_executable(${LIBRARY_NAME} ${PUBLIC_HEADERS} ${PRIVATE_HEADER} ${SOURCES} )
 target_link_libraries(${LIBRARY_NAME}
     PRIVATE
         # ${CMAKE_CURRENT_SOURCE_DIR}

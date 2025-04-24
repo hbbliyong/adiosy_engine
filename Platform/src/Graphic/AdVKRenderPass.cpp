@@ -10,6 +10,7 @@ namespace ade
 		if (mSubPasses.empty())
 		{
 			mAttachments = { {
+				
 				.format = device->GetSettings().surfaceFormat,
 				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,

@@ -2,10 +2,11 @@
 #include "Graphic/AdVKRenderPass.h"
 #include "Graphic/AdVKDevice.h"
 #include "Graphic/AdVKImageView.h"
+#include "Graphic/AdVKImage.h"
 
 namespace ade
 {
-	AdVKFramebuffer::AdVKFramebuffer(AdVKDevice* device, AdVKRenderPass* renderPass, const std::vector<VkImage>& images, uint32_t width, uint32_t height)
+	AdVKFramebuffer::AdVKFramebuffer(AdVKDevice* device, AdVKRenderPass* renderPass, const std::vector<std::shared_ptr<AdVKImage>>& images, uint32_t width, uint32_t height)
 		:mDevice(device), mRenderPass(renderPass), mWidth(width), mHeight(height)
 	{
 		ReCreate(images, width, height);
@@ -14,7 +15,7 @@ namespace ade
 	{
 		VK_D(Framebuffer, mDevice->GetHandle(), mHandle);
 	}
-	bool AdVKFramebuffer::ReCreate(const std::vector<VkImage>& images, uint32_t width, uint32_t height)
+	bool AdVKFramebuffer::ReCreate(const std::vector<std::shared_ptr<AdVKImage>>& images, uint32_t width, uint32_t height)
 	{
 		mWidth = width;
 		mHeight = height;
@@ -24,7 +25,9 @@ namespace ade
 
 		for (const auto& image : images)
 		{
-			mImageViews.push_back(std::make_shared<AdVKImageView>(mDevice, image, mDevice->GetSettings().surfaceFormat, VK_IMAGE_ASPECT_COLOR_BIT));
+			bool isDepthFormat = IsDepthOnlyFormat(image->GetFormat()); // FIXME when format is stencil format
+			mImageViews.push_back(std::make_shared<AdVKImageView>(mDevice, image->GetHandle(), image->GetFormat(),
+			isDepthFormat?VK_IMAGE_ASPECT_DEPTH_BIT:	VK_IMAGE_ASPECT_COLOR_BIT));
 			attachments.push_back(mImageViews.back()->GetHandle());
 		}
 		VkFramebufferCreateInfo framebufferInfo = {

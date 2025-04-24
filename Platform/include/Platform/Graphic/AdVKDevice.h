@@ -22,11 +22,13 @@ namespace ade
 		AdVkSettings GetSettings()const { return m_setttings; }
 		VkPipelineCache GetPipelineCache()const { return mPipelineCache; }
 		AdVKQueue* GetFirstPresentQueue() { return  m_PresentQueues.empty() ? nullptr : m_PresentQueues[0].get(); ; }
+	
+		int32_t GetMemoryIndex(VkMemoryPropertyFlags memProps,uint32_t memoryTypeBits) const;
 	private:
 		void CreatePipelineCache();
 	private:
 		VkDevice m_Device;
-
+		AdVKGraphicContext* mContext;
 		std::vector< std::shared_ptr<AdVKQueue>> m_GraphicQueues;
 		std::vector< std::shared_ptr<AdVKQueue>> m_PresentQueues;
 

@@ -13,7 +13,7 @@ namespace ade
 	};
 
 	AdVKDevice::AdVKDevice(AdVKGraphicContext* context, uint32_t graphicQueueCount, uint32_t presentQueueCount, const AdVkSettings& settings):
-		m_setttings(settings)
+		m_setttings(settings),mContext(context)
 	{
 		if (!context)
 		{
@@ -121,6 +121,24 @@ namespace ade
 		vkDeviceWaitIdle(m_Device);
 		VK_D(PipelineCache, m_Device, mPipelineCache);
 		vkDestroyDevice(m_Device, nullptr);
+	}
+	int32_t AdVKDevice::GetMemoryIndex(VkMemoryPropertyFlags memProps, uint32_t memoryTypeBits) const
+	{
+		VkPhysicalDeviceMemoryProperties phyDeviceMemProps = mContext->GetPhyDeviceMemProperties();
+		if (phyDeviceMemProps.memoryTypeCount == 0)
+		{
+			LOG_E("Physical device memory type count is 0");
+			return -1;
+		}
+		for (int i = 0; i < phyDeviceMemProps.memoryTypeCount; i++)
+		{
+			if (memoryTypeBits & (1 << i) && (phyDeviceMemProps.memoryTypes[i].propertyFlags & memProps) == memProps)
+			{
+				return i;
+			}
+		}
+		LOG_E("Can not find memory type index:type bit:{0}", memoryTypeBits);
+		return 0;
 	}
 	void AdVKDevice::CreatePipelineCache()
 	{

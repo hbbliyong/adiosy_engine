@@ -11,10 +11,10 @@ namespace ade
 	class AdVKFramebuffer
 	{
 	public:
-		AdVKFramebuffer(AdVKDevice* device, AdVKRenderPass* renderPass, const std::vector<VkImage>& images, uint32_t width, uint32_t height);
+		AdVKFramebuffer(AdVKDevice* device, AdVKRenderPass* renderPass, const std::vector<std::shared_ptr<AdVKImage>>& images, uint32_t width, uint32_t height);
 		~AdVKFramebuffer();
 
-		bool ReCreate(const std::vector<VkImage>& images, uint32_t width, uint32_t height);
+		bool ReCreate(const std::vector<std::shared_ptr<AdVKImage>>& images, uint32_t width, uint32_t height);
 
 		uint32_t GetWidth()const { return mWidth; }
 		uint32_t GetHeight()const { return mHeight; }
