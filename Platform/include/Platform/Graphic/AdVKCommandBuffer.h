@@ -14,6 +14,7 @@ namespace ade
 		static void EndCommandBuffer(VkCommandBuffer cmdBuffer);
 
 		std::vector<VkCommandBuffer> AllocateCommandBuffer(uint32_t count) const;
+		VkCommandBuffer AllocateOneCommandBuffer()const;
 		VkCommandPool GetHandel()const { return mHandle; }
 
 	private:

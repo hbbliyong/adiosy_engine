@@ -21,7 +21,7 @@ spirv_shaders(
         ${SHADERS}
 )
 
-add_executable(${LIBRARY_NAME} ${PUBLIC_HEADERS} ${PRIVATE_HEADER} ${SOURCES} )
+add_executable(${LIBRARY_NAME} ${PUBLIC_HEADERS} ${PRIVATE_HEADER} ${SOURCES})
 target_link_libraries(${LIBRARY_NAME}
     PRIVATE
         # ${CMAKE_CURRENT_SOURCE_DIR}

@@ -29,6 +29,7 @@ namespace ade
 
 		uint32_t GetWidth()const { return m_surfaceInfo.capabilities.currentExtent.width; }
 		uint32_t GetHeight()const { return m_surfaceInfo.capabilities.currentExtent.height; }
+		const SurfaceInfo& GetSurfaceInfo() const { return m_surfaceInfo; }
 	private:
 		void SetupSurfaceCapabilities();
 	private:

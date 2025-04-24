@@ -4,7 +4,7 @@
 namespace ade
 {
 	AdVKImage::AdVKImage(AdVKDevice* device, VkFormat format, VkExtent3D extent, VkImageUsageFlags usage) :
-		mFormat(format)
+	mDevice(device),mFormat(format),mExtent(extent),mUsage(usage)
 	{
 		VkImageTiling tiling = VK_IMAGE_TILING_LINEAR;
 		bool isDepthStencilFormat = IsDepthStencilFormat(format);
@@ -45,7 +45,7 @@ namespace ade
 	}
 
 	AdVKImage::AdVKImage(AdVKDevice* device, VkFormat format, VkImage image, VkImageUsageFlags usage) :
-		mDevice(device), mFormat(format), mHandle(image),bCreateImage(false)
+		mHandle(image),mDevice(device), mFormat(format), bCreateImage(false)
 	{
 
 	}

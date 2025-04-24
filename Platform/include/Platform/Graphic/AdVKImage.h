@@ -18,5 +18,8 @@ namespace ade
 		VkFormat mFormat;
 		AdVKDevice* mDevice;
 		bool bCreateImage = true;
+
+		VkExtent3D mExtent;
+		VkImageUsageFlags mUsage;
    };
 } // namespace ade

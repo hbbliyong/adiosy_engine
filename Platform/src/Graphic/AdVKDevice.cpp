@@ -1,6 +1,7 @@
 #include "Graphic/AdVKDevice.h"
 #include "Graphic/AdVKGraphicContext.h"
 #include "Graphic/AdVKQueue.h"
+#include "Graphic/AdVKCommandBuffer.h"
 namespace ade
 {
 	const DeviceFeature requestedExtensions[] = {
@@ -114,11 +115,13 @@ namespace ade
 			m_PresentQueues.push_back(std::make_shared<AdVKQueue>(presentQueueFamilyInfo.queueFamilyIndex, i, queue, true));
 		}
 		CreatePipelineCache();
+		CreateDefaultCmdPool();
 	}
 
 	AdVKDevice::~AdVKDevice()
 	{
 		vkDeviceWaitIdle(m_Device);
+		mDefaultCmdPool = nullptr;
 		VK_D(PipelineCache, m_Device, mPipelineCache);
 		vkDestroyDevice(m_Device, nullptr);
 	}
@@ -137,9 +140,25 @@ namespace ade
 				return i;
 			}
 		}
-		LOG_E("Can not find memory type index:type bit:{0}", memoryTypeBits);
+		LOG_E("Can not find memory type index: type bit: {0}", memoryTypeBits);
 		return 0;
 	}
+
+	VkCommandBuffer AdVKDevice::CreateAndBeginOneCmdBuffer()
+	{
+		VkCommandBuffer cmdBuffer = mDefaultCmdPool->AllocateOneCommandBuffer();
+		mDefaultCmdPool->BeginCommandBuffer(cmdBuffer);
+		return cmdBuffer;
+	}
+
+	void AdVKDevice::SubmitOneCmdBuffer(VkCommandBuffer cmdBuffer)
+	{
+		mDefaultCmdPool->EndCommandBuffer(cmdBuffer);
+		AdVKQueue* queue = GetFirstGraphicQueue();
+		queue->Submit({ cmdBuffer });
+		queue->WaitIdle();
+	}
+
 	void AdVKDevice::CreatePipelineCache()
 	{
 		VkPipelineCacheCreateInfo createInfo = {
@@ -150,5 +169,9 @@ namespace ade
 //.pInitialData=
 		};
 		CALL_VK(vkCreatePipelineCache(m_Device, &createInfo, nullptr, &mPipelineCache));
+	}
+	void AdVKDevice::CreateDefaultCmdPool()
+	{
+		mDefaultCmdPool = std::make_shared<AdVKCommandPool>(this, mContext->GetGraphicQueueFamilyInfo().queueFamilyIndex);
 	}
 }

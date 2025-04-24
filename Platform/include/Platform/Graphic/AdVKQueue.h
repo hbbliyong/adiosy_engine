@@ -10,8 +10,8 @@ namespace ade
 		AdVKQueue(uint32_t familyIndex, uint32_t index, VkQueue queue, bool canPresent);
 		~AdVKQueue() = default;
 		void WaitIdle()const;
-		void Submit(std::vector<VkCommandBuffer> cmdBuffers,const std::vector<VkSemaphore>& waitSemaphores,
-								const std::vector<VkSemaphore>& signalSemaphores, VkFence fence);
+		void Submit(std::vector<VkCommandBuffer> cmdBuffers,const std::vector<VkSemaphore>& waitSemaphores={},
+								const std::vector<VkSemaphore>& signalSemaphores={}, VkFence fence=nullptr);
 		VkQueue GetHandle() const { return m_Queue; }
 	private:
 		uint32_t m_FamilyIndex;

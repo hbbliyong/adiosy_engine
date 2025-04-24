@@ -10,7 +10,7 @@ namespace ade
 		if (mSubPasses.empty())
 		{
 			mAttachments = { {
-				
+
 				.format = device->GetSettings().surfaceFormat,
 				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -135,19 +135,19 @@ namespace ade
 	void AdVKRenderPass::Begin(VkCommandBuffer cmdBuffer, AdVKFramebuffer* frameBuffer, const std::vector<VkClearValue>& clearValues) const
 	{
 		VkRect2D renderArea = {
-			.offset={0,0},
-			.extent={frameBuffer->GetWidth(),frameBuffer->GetHeight()}
+					 .offset = { 0, 0 },
+					 .extent = { frameBuffer->GetWidth(), frameBuffer->GetHeight() }
 		};
 		VkRenderPassBeginInfo beginInfo = {
-			.sType=VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-			.pNext=nullptr,
-			.renderPass=mHandle,
-			.framebuffer=frameBuffer->GetHandle(),
-			.renderArea= renderArea,
-			.clearValueCount=static_cast<uint32_t>(clearValues.size()),
-			.pClearValues=clearValues.data()
+				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				.pNext = nullptr,
+				.renderPass = mHandle,
+				.framebuffer = frameBuffer->GetHandle(),
+				.renderArea = renderArea,
+				.clearValueCount = static_cast<uint32_t>(clearValues.size()),
+				.pClearValues = clearValues.data()
 		};
-		vkCmdBeginRenderPass(cmdBuffer, &beginInfo,  VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(cmdBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}
 	void AdVKRenderPass::End(VkCommandBuffer cmdBuffer) const
 	{

@@ -47,4 +47,8 @@ namespace ade
 		CALL_VK(vkAllocateCommandBuffers(mDevice->GetHandle(), &allocateInfo, cmdBuffers.data()));
 		return cmdBuffers;
 	}
+	VkCommandBuffer AdVKCommandPool::AllocateOneCommandBuffer() const
+	{
+		return AllocateCommandBuffer(1)[0];	
+	}
 }

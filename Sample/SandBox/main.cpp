@@ -11,6 +11,7 @@
 #include "Platform/Graphic/AdVKPipeline.h"
 #include "Platform/Graphic/AdVKCommandBuffer.h"
 #include "Platform/Graphic/AdVKImage.h"
+#include "Platform/Graphic/AdVKBuffer.h"
 #include "Platform/AdFileUtils.h"
 #include "Platform/AdGeometryUtil.h"
 #include <algorithm>
@@ -18,7 +19,7 @@
 
 struct PushConstants
 {
-	glm::mat4 matrix;
+	glm::mat4 matrix = { 1.0f };
 };
 int main()
 {
@@ -37,36 +38,39 @@ int main()
 	swapchain->ReCreate();
 
 	VkFormat depthFormat = VK_FORMAT_D32_SFLOAT;
-	//render pass
+	// render pass
 	std::vector<ade::Attachment> attachments = {
-		{
-				.format = device->GetSettings().surfaceFormat,
-				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-
-				.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-		},
-		{
-				.format = depthFormat,
-				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-				.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-		}
+			{
+					.format = swapchain->GetSurfaceInfo().surfaceFormat.format,
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+					.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+					.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+			},
+			{
+					.format = depthFormat,
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+					.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+					.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+					.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+					.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+			}
 	};
-	std::vector<ade::RenderSubPass> subpassess = {
-		{
-			.colorAttachments = {0,VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
-			.depthStencilAttachments = {1,VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL}
-		}
+	std::vector<ade::RenderSubPass> subpasses = {
+			{
+					.colorAttachments = { 0 },
+					.depthStencilAttachments = { 1 },
+					.sampleCount = VK_SAMPLE_COUNT_1_BIT
+			}
 	};
 
-	auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get(), attachments, subpassess);
+	//auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get(), attachments, subpasses);
+	auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get());
 
 
 	std::vector<VkImage> swapchainImages = swapchain->GetImages();
@@ -128,15 +132,26 @@ int main()
 	};
 
 	pipeline->SetVertexInputState(vertexBindings, vertexAttributes);
-	pipeline->SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)->EnableDepthTest();
+	pipeline->SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);//->EnableDepthTest();
 	pipeline->SetDynamicState({ VK_DYNAMIC_STATE_VIEWPORT,VK_DYNAMIC_STATE_SCISSOR });
 	pipeline->Create();
 
 	auto cmdPool = std::make_shared<ade::AdVKCommandPool>(device.get(), vkContext->GetPresentQueueFamilyInfo().queueFamilyIndex);
 	auto cmdBuffers = cmdPool->AllocateCommandBuffer(swapchainImages.size());
-	ade::AdVKQueue* graphicQueue = device->GetFirstPresentQueue();
+	ade::AdVKQueue* graphicQueue = device->GetFirstGraphicQueue();
+
+	PushConstants pc{};
+	//Geomerty
+	std::vector<ade::AdVertex> vertices;
+	std::vector<uint32_t> indices;
+	ade::AdGeometryUtil::CreateCube(-0.3f, 0.3f, -0.3f, 0.3f, -0.3f, 0.3f, vertices, indices);
+	auto vertexBuffer = std::make_shared<ade::AdVKBuffer>(device.get(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		sizeof(vertices[0]) * vertices.size(), vertices.data());
+	auto indexBuffer = std::make_shared<ade::AdVKBuffer>(device.get(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		sizeof(indices[0]) * indices.size(), indices.data());
+
 	std::vector<VkClearValue> clearValues = {
-		{.1f,.2f,.3f,1.0f}
+		 {.color = { 0.1f, 0.2f, 0.3f, 1.f }}, {.depthStencil = { 1, 0 } }
 	};
 
 	//1.acquire swapchain image Semaphore
@@ -167,21 +182,23 @@ int main()
 		CALL_VK(vkCreateFence(device->GetHandle(), &fenceInfo, nullptr, &frameFences[i]));
 	}
 
-	//Geomerty
-	std::vector<ade::AdVertex> vertices;
-	std::vector<uint32_t> indices;
-	ade::AdGeometryUtil::CreateCube(-0.3f, 0.3f, -0.3f, 0.3f, -0.3f, 0.3f, vertices, indices);
+	std::chrono::time_point lastTimePoint = std::chrono::steady_clock::now();
 
 	uint32_t currentBuffer = 0;
 
 	while (!window->ShouldClose())
 	{
 		window->PollEvent();
-		vkWaitForFences(device->GetHandle(), 1, &frameFences[currentBuffer], VK_FALSE, UINT64_MAX);
-		vkResetFences(device->GetHandle(), 1, &frameFences[currentBuffer]);
+		CALL_VK(vkWaitForFences(device->GetHandle(), 1, &frameFences[currentBuffer], VK_TRUE, UINT64_MAX));
+		CALL_VK(vkResetFences(device->GetHandle(), 1, &frameFences[currentBuffer]));
 		//1.acquire swapchain image
-		//int32_t imageIndex;
 		auto imageIndex = swapchain->AcquireImage(imageAvailableSemaphores[currentBuffer]);
+
+		float time = std::chrono::duration<float>(std::chrono::steady_clock::now() - lastTimePoint).count();
+		pc.matrix = glm::rotate(glm::mat4(1.0f), glm::radians(-17.f), glm::vec3(1, 0, 0));
+		pc.matrix = glm::rotate(pc.matrix, glm::radians(time * 100.f), glm::vec3(0, 1, 0));
+		pc.matrix = glm::ortho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f) * pc.matrix;
+
 		//2.begin cmdbuffer
 		ade::AdVKCommandPool::BeginCommandBuffer(cmdBuffers[imageIndex]);
 		//3.begin renderpass,bind framebuffer
@@ -194,8 +211,8 @@ int main()
 			   .y = 0,
 			   .width = static_cast<float>(framebuffers[imageIndex]->GetWidth()),
 			   .height = static_cast<float>(framebuffers[imageIndex]->GetHeight()),
-			   .minDepth = 0.f,
-			   .maxDepth = 1.f
+			   .minDepth = 0.0f,
+			   .maxDepth = 1.0f
 		};
 		vkCmdSetViewport(cmdBuffers[imageIndex], 0, 1, &viewport);
 
@@ -204,8 +221,17 @@ int main()
 		.extent = { framebuffers[imageIndex]->GetWidth(), framebuffers[imageIndex]->GetHeight() }
 		};
 		vkCmdSetScissor(cmdBuffers[imageIndex], 0, 1, &scissor);
+	
+		vkCmdPushConstants(cmdBuffers[imageIndex], pipelineLayout->GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pc), &pc);
+		//bind buffers
+		VkBuffer vertexBuffers[] = { vertexBuffer->GetHandle() };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(cmdBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
+		vkCmdBindIndexBuffer(cmdBuffers[imageIndex], indexBuffer->GetHandle(), 0,VK_INDEX_TYPE_UINT32);
+
 		//5.draw
-		vkCmdDraw(cmdBuffers[imageIndex], 3, 1, 0, 0);
+		//vkCmdDraw(cmdBuffers[imageIndex], 3, 1, 0, 0);
+		vkCmdDrawIndexed(cmdBuffers[imageIndex], indices.size(), 1, 0, 0, 0);
 		// 6.end renderpass
 		renderPass->End(cmdBuffers[imageIndex]);
 		// 7.end cmdbuffer
