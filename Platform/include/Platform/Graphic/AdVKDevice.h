@@ -12,6 +12,7 @@ namespace ade
 		VkFormat surfaceFormat = VK_FORMAT_B8G8R8A8_UNORM;
 		VkPresentModeKHR presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 		uint32_t swapchainImageCount = 3;
+		VkFormat depthFormat = VK_FORMAT_D32_SFLOAT;
 	};
 
 	class AdVKDevice

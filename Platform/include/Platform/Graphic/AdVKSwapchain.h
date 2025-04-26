@@ -30,6 +30,7 @@ namespace ade
 		uint32_t GetWidth()const { return m_surfaceInfo.capabilities.currentExtent.width; }
 		uint32_t GetHeight()const { return m_surfaceInfo.capabilities.currentExtent.height; }
 		const SurfaceInfo& GetSurfaceInfo() const { return m_surfaceInfo; }
+		uint32_t GetCurrentImageIndex() const { return mCurrentImageIdx; }
 	private:
 		void SetupSurfaceCapabilities();
 	private:
@@ -38,5 +39,6 @@ namespace ade
 		AdVKDevice* m_Device;
 		SurfaceInfo m_surfaceInfo;
 		std::vector<VkImage> m_images;
+	mutable	uint32_t mCurrentImageIdx = -1;
 	};
 } // namespace ade

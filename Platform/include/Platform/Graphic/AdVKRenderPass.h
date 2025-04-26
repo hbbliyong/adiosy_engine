@@ -16,7 +16,7 @@ namespace ade
 		VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkImageLayout finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT;
-		VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;//Í¼Æ¬µÄÓÃÍ¾
 	};
 
 	struct RenderSubPass
@@ -37,6 +37,10 @@ namespace ade
 		void End(VkCommandBuffer cmdBuffer) const;
 
 		VkRenderPass GetHandle()const { return mHandle; }
+
+		const std::vector<Attachment>& GetAttachments()const { return mAttachments; }
+		const std::vector<RenderSubPass>& GetSubPasses() const { return mSubPasses; }
+		uint32_t GetAttachmentSize() const { return mAttachments.size(); }
 
 	private:
 		VkRenderPass mHandle = VK_NULL_HANDLE;

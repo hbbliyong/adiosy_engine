@@ -87,13 +87,14 @@ namespace ade
 		CALL_VK(vkAcquireNextImageKHR(m_Device->GetHandle(), m_Handle, UINT64_MAX, semaphore, fence, &imageIndex));
 		if (fence != VK_NULL_HANDLE)
 		{
-			vkWaitForFences(m_Device->GetHandle(),1, &fence, VK_FALSE, UINT64_MAX);
+			vkWaitForFences(m_Device->GetHandle(), 1, &fence, VK_FALSE, UINT64_MAX);
 			vkResetFences(m_Device->GetHandle(), 1, &fence);
 		}
+		mCurrentImageIdx = imageIndex;
 		return imageIndex;
 	}
 
-	void AdVKSwapchain::Present(int32_t imageIndex, const std::vector<VkSemaphore>& waitSemaphores ) const
+	void AdVKSwapchain::Present(int32_t imageIndex, const std::vector<VkSemaphore>& waitSemaphores) const
 	{
 		VkPresentInfoKHR presentInfo = {
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,

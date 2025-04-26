@@ -1,10 +1,10 @@
 set(DIR_NAME core)
 set(LIBRARY_NAME adiosy_${DIR_NAME})
 
-file(GLOB PUBLIC_HEADERS "include/Core/*.h*")
-file(GLOB PRIVATE_HEADER "src/*.h*")
+file(GLOB_RECURSE PUBLIC_HEADERS "include/Core/*.h*")
+file(GLOB_RECURSE PRIVATE_HEADER "src/*.h*")
 
-file(GLOB SOURCES "src/*.c*")
+file(GLOB_RECURSE SOURCES "src/*.c*")
 
 add_library(${LIBRARY_NAME} ${PUBLIC_HEADERS} ${PRIVATE_HEADER} ${SOURCES})
 

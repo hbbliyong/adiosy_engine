@@ -10,7 +10,6 @@ namespace ade
 		if (mSubPasses.empty())
 		{
 			mAttachments = { {
-
 				.format = device->GetSettings().surfaceFormat,
 				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -19,7 +18,7 @@ namespace ade
 				.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 				.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 			} };
-			mSubPasses = { {.colorAttachments = { 0 }, .sampleCount = VK_SAMPLE_COUNT_1_BIT } };
+			mSubPasses = {{.colorAttachments = { 0 }, .sampleCount = VK_SAMPLE_COUNT_1_BIT } };
 		}
 		//2. subpasses
 		std::vector<VkSubpassDescription> subpassDescriptions(mSubPasses.size());
@@ -34,12 +33,12 @@ namespace ade
 
 			for (const auto& inputAttachment : subpass.inputAttachments)
 			{
-				inputAttachmentRefs[i].push_back({ inputAttachment, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
+				inputAttachmentRefs[i].emplace_back(inputAttachment, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 			}
 
 			for (const auto& colorAttachment : subpass.colorAttachments)
 			{
-				colorAttachmentRefs[i].push_back({ colorAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+				colorAttachmentRefs[i].emplace_back(colorAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL );
 				mAttachments[colorAttachment].samples = subpass.sampleCount;
 				if (subpass.sampleCount > VK_SAMPLE_COUNT_1_BIT)
 				{
@@ -49,7 +48,7 @@ namespace ade
 
 			for (const auto& depthStencilAttachment : subpass.depthStencilAttachments)
 			{
-				depthStencilAttachmentRefs[i].push_back({ depthStencilAttachment, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
+				depthStencilAttachmentRefs[i].emplace_back( depthStencilAttachment, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 				mAttachments[depthStencilAttachment].samples = subpass.sampleCount;
 			}
 

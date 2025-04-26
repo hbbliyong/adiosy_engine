@@ -6,8 +6,8 @@ namespace ade
 	class AdVKImage
 	{
 	public:
-		AdVKImage(AdVKDevice* device, VkFormat format,VkExtent3D extent,VkImageUsageFlags usage);
-		AdVKImage(AdVKDevice* device, VkFormat format,VkImage image,    VkImageUsageFlags usage);
+		AdVKImage(AdVKDevice* device, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
+		AdVKImage(AdVKDevice* device, VkImage image, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
 		~AdVKImage();
 
 		VkFormat GetFormat()const { return mFormat; }
