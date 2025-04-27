@@ -18,6 +18,9 @@
 #include "Core/Render/AdRenderTarget.h"
 #include "Core/Render/AdRenderContext.h"
 #include "Core/Render/AdMesh.h"
+#include "vld.h"
+
+#pragma comment(lib, "vld.lib")
 
 struct PushConstants
 {
@@ -71,8 +74,8 @@ protected:
 				.sampleCount = VK_SAMPLE_COUNT_4_BIT
 			}
 		};
-		//mRenderPass = std::make_shared<ade::AdVKRenderPass>(device, attachments, subpasses);
-		mRenderPass = std::make_shared<ade::AdVKRenderPass>(device);
+		mRenderPass = std::make_shared<ade::AdVKRenderPass>(device, attachments, subpasses);
+		//mRenderPass = std::make_shared<ade::AdVKRenderPass>(device);
 
 		mRenderTarget = std::make_shared<ade::AdRenderTarget>(mRenderPass.get());
 		mRenderTarget->SetColorClearValue({ 0.1f, 0.2f, 0.3f, 1.f });
@@ -156,7 +159,6 @@ protected:
 			.flags = VK_FENCE_CREATE_SIGNALED_BIT
 		};
 
-
 		for (int i = 0; i < mNumBuffer; i++)
 		{
 			CALL_VK(vkCreateSemaphore(device->GetHandle(), &semaphoreInfo, nullptr, &mImageAvailableSemaphores[i]));
@@ -192,8 +194,26 @@ protected:
 		CALL_VK(vkResetFences(device->GetHandle(), 1, &mFrameFences[mCurrentBuffer]));
 
 		//1.acquire swapchain image
-		auto imageIndex = swapchain->AcquireImage(mImageAvailableSemaphores[mCurrentBuffer]);
+		int32_t imageIndex;
+		VkResult ret = swapchain->AcquireImage(&imageIndex, mImageAvailableSemaphores[mCurrentBuffer]);
 
+		if (ret == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			CALL_VK(vkDeviceWaitIdle(device->GetHandle()));
+			VkExtent2D originExtent = { swapchain->GetWidth(), swapchain->GetHeight() };
+			bool bSuc = swapchain->ReCreate();
+
+			VkExtent2D newExtent = { swapchain->GetWidth(), swapchain->GetHeight() };
+			if (bSuc && (originExtent.width != newExtent.width || originExtent.height != newExtent.height))
+			{
+				mRenderTarget->SetExtent(newExtent);
+			}
+			ret = swapchain->AcquireImage(&imageIndex, mImageAvailableSemaphores[mCurrentBuffer]);
+			if (ret != VK_SUCCESS && ret != VK_SUBOPTIMAL_KHR)
+			{
+				LOG_E("Recreate swapchain error: {0}", vk_result_string(ret));
+			}
+		}
 		VkCommandBuffer cmdBuffer = mCmdBuffers[imageIndex];
 		//2.begin cmdbuffer
 		ade::AdVKCommandPool::BeginCommandBuffer(cmdBuffer);
@@ -233,10 +253,19 @@ protected:
 			{ mSubmitedSemaphores[mCurrentBuffer] }, mFrameFences[mCurrentBuffer]);
 		//graphicQueue->WaitIdle();
 		// 9.present
-		swapchain->Present(imageIndex, { mSubmitedSemaphores[mCurrentBuffer] });
+		ret = swapchain->Present(imageIndex, { mSubmitedSemaphores[mCurrentBuffer] });
+		if (ret == VK_SUBOPTIMAL_KHR)
+		{
+			CALL_VK(vkDeviceWaitIdle(device->GetHandle()));
+			VkExtent2D originExtent = { swapchain->GetWidth(), swapchain->GetHeight() };
+			bool bSuc = swapchain->ReCreate();
 
-
-
+			VkExtent2D newExtent = { swapchain->GetWidth(), swapchain->GetHeight() };
+			if (bSuc && (originExtent.width != newExtent.width || originExtent.height != newExtent.height))
+			{
+				mRenderTarget->SetExtent(newExtent);
+			}
+		}
 		mCurrentBuffer = (mCurrentBuffer + 1) % mNumBuffer;
 	}
 
@@ -278,24 +307,3 @@ ade::AdApplication* CreateApplicationEntryPoint()
 {
 	return new SandBoxApp();
 }
-
-
-
-
-//
-//	while (!window->ShouldClose())
-//	{
-
-
-//	}
-//
-//	for (int i = 0; i < numBuffer; i++)
-//	{
-//		vkDeviceWaitIdle(device->GetHandle());
-//		VK_D(Semaphore, device->GetHandle(), imageAvailableSemaphores[i]);
-//		VK_D(Semaphore, device->GetHandle(), submitedSemaphores[i]);
-//		VK_D(Fence, device->GetHandle(), frameFences[i]);
-//	}
-//	return EXIT_SUCCESS;
-//
-//}

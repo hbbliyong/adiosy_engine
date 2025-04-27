@@ -30,6 +30,7 @@ namespace ade
 	void AdRenderTarget::Init()
 	{
 		mClearValues.resize(mRenderPass->GetAttachmentSize());
+	
 		SetColorClearValue({ 0.f,0.f,0.f,1.f });
 		SetDepthStencilClearValue({ 1.f,0 });
 	}

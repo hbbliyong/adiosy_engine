@@ -81,20 +81,25 @@ namespace ade
 		return ret == VK_SUCCESS;
 	}
 
-	int32_t AdVKSwapchain::AcquireImage(VkSemaphore semaphore, VkFence fence) const
+	VkResult AdVKSwapchain::AcquireImage(int32_t* outImageIndex, VkSemaphore semaphore, VkFence fence) const
 	{
 		uint32_t imageIndex;
-		CALL_VK(vkAcquireNextImageKHR(m_Device->GetHandle(), m_Handle, UINT64_MAX, semaphore, fence, &imageIndex));
+		VkResult ret = vkAcquireNextImageKHR(m_Device->GetHandle(), m_Handle, UINT64_MAX, semaphore, fence, &imageIndex);
 		if (fence != VK_NULL_HANDLE)
 		{
 			vkWaitForFences(m_Device->GetHandle(), 1, &fence, VK_FALSE, UINT64_MAX);
 			vkResetFences(m_Device->GetHandle(), 1, &fence);
 		}
-		mCurrentImageIdx = imageIndex;
-		return imageIndex;
+		if (ret == VK_SUCCESS || ret == VK_SUBOPTIMAL_KHR)
+		{
+			*outImageIndex = imageIndex;
+			mCurrentImageIdx = imageIndex;
+		}
+
+		return ret;
 	}
 
-	void AdVKSwapchain::Present(int32_t imageIndex, const std::vector<VkSemaphore>& waitSemaphores) const
+	VkResult AdVKSwapchain::Present(int32_t imageIndex, const std::vector<VkSemaphore>& waitSemaphores) const
 	{
 		VkPresentInfoKHR presentInfo = {
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -105,8 +110,10 @@ namespace ade
 			.pSwapchains = &m_Handle,
 			.pImageIndices = reinterpret_cast<const uint32_t*>(&imageIndex)
 		};
-		CALL_VK(vkQueuePresentKHR(m_Device->GetFirstPresentQueue()->GetHandle(), &presentInfo));
+		VkResult ret = vkQueuePresentKHR(m_Device->GetFirstPresentQueue()->GetHandle(), &presentInfo);
 		m_Device->GetFirstPresentQueue()->WaitIdle();
+	
+		return ret;
 	}
 
 	void AdVKSwapchain::SetupSurfaceCapabilities()

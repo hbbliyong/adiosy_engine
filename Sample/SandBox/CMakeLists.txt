@@ -20,6 +20,12 @@ spirv_shaders(
         SOURCES
         ${SHADERS}
 )
+# 添加测试内存泄露工具包含目录
+include_directories("C:/Program Files (x86)/Visual Leak Detector/include")
+# 添加测试内存泄露工具库目录
+link_directories("C:/Program Files (x86)/Visual Leak Detector/lib/Win64")
+# 添加测试内存泄露工具全局的预处理器定义
+add_definitions(-D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
 
 add_executable(${LIBRARY_NAME} ${PUBLIC_HEADERS} ${PRIVATE_HEADER} ${SOURCES})
 target_link_libraries(${LIBRARY_NAME}
@@ -32,4 +38,5 @@ target_link_libraries(${LIBRARY_NAME}
 # set_target_properties(${LIBRARY_NAME} PROPERTIES
 #     VS_DEBUGGER_WORKING_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
 # )
+
 
