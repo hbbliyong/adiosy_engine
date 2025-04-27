@@ -8,7 +8,7 @@ namespace ade
 	AdVKSwapchain::AdVKSwapchain(AdVKGraphicContext* context, AdVKDevice* device) :
 		m_Context(context), m_Device(device)
 	{
-
+		ReCreate();
 	}
 	AdVKSwapchain::~AdVKSwapchain()
 	{

@@ -18,7 +18,7 @@ namespace ade
 				.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 				.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 			} };
-			mSubPasses = {{.colorAttachments = { 0 }, .sampleCount = VK_SAMPLE_COUNT_1_BIT } };
+			mSubPasses = {{.colorAttachments = { 0 }, .sampleCount = VK_SAMPLE_COUNT_4_BIT } };
 		}
 		//2. subpasses
 		std::vector<VkSubpassDescription> subpassDescriptions(mSubPasses.size());

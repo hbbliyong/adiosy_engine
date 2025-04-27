@@ -23,13 +23,16 @@ namespace ade{
         virtual void OnUpdate(float deltaTime) {};
         virtual void OnRender() {};
         virtual void OnDestroy() {};
+
+        std::chrono::steady_clock::time_point mStartTimePoint;
+        std::chrono::steady_clock::time_point mLastTimePoint;
+        std::shared_ptr<AdRenderContext> mRenderContext;
     private:
         void ParseArgs(int argc ,char* argv[]);
         std::unique_ptr<AdWindow> mWindow;
         AppSettings mAppSettings;
 
-        std::chrono::steady_clock::time_point mStartTimePoint;
-        std::chrono::steady_clock::time_point mLastTimePoint;
+
         uint64_t mFrameIndex;
         bool bPause = false;
 

@@ -17,8 +17,12 @@
 #include "Core/AdEntryPoint.h"
 #include "Core/Render/AdRenderTarget.h"
 #include "Core/Render/AdRenderContext.h"
+#include "Core/Render/AdMesh.h"
 
-
+struct PushConstants
+{
+	glm::mat4 matrix = { 1.0f };
+};
 class SandBoxApp :public ade::AdApplication
 {
 protected:
@@ -35,7 +39,6 @@ protected:
 		ade::AdRenderContext* renderCxt = ade::AdApplication::GetAppContext()->renderCxt;
 		ade::AdVKDevice* device = renderCxt->GetDevice();
 		ade::AdVKSwapchain* swapchain = renderCxt->GetSwapchain();
-
 
 		std::vector<ade::Attachment> attachments =
 		{
@@ -68,211 +71,222 @@ protected:
 				.sampleCount = VK_SAMPLE_COUNT_4_BIT
 			}
 		};
-		auto renderPass = std::make_shared<ade::AdVKRenderPass>(device, attachments, subpasses);
+		//mRenderPass = std::make_shared<ade::AdVKRenderPass>(device, attachments, subpasses);
+		mRenderPass = std::make_shared<ade::AdVKRenderPass>(device);
+
+		mRenderTarget = std::make_shared<ade::AdRenderTarget>(mRenderPass.get());
+		mRenderTarget->SetColorClearValue({ 0.1f, 0.2f, 0.3f, 1.f });
+		mRenderTarget->SetDepthStencilClearValue({ 1, 0 });
+
+		ade::ShaderLayout shaderLayout = {
+			.pushConstants = {
+				{
+								.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+								.offset = 0,
+								.size = sizeof(PushConstants)
+				}
+			}
+		};
+
+		mPipelineLayout = std::make_shared<ade::AdVKPipelineLayout>(device,
+			AD_RES_SHADER_DIR"00_hello_buffer.vert",
+			AD_RES_SHADER_DIR"00_hello_buffer.frag", shaderLayout);
+
+		std::vector<VkVertexInputAttributeDescription> vertexAttributes = {
+			{
+				.location = 0,
+				.binding = 0,
+				.format = VK_FORMAT_R32G32B32_SFLOAT,
+				.offset = offsetof(ade::AdVertex,position)
+			},
+			{
+				.location = 1,
+				.binding = 0,
+				.format = VK_FORMAT_R32G32_SFLOAT,
+				.offset = offsetof(ade::AdVertex,texcoord0)
+			},
+			{
+				.location = 2,
+				.binding = 0,
+				.format = VK_FORMAT_R32G32B32_SFLOAT,
+				.offset = offsetof(ade::AdVertex,normal)
+			},
+		};
+		std::vector<VkVertexInputBindingDescription> vertexBindings = {
+			{
+				.binding = 0,
+				.stride = sizeof(ade::AdVertex),
+				.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+			}
+		};
+
+		mPipeline = std::make_shared<ade::AdVKPipeline>(device, mRenderPass.get(), mPipelineLayout.get());
+		mPipeline->SetVertexInputState(vertexBindings, vertexAttributes);
+		mPipeline->SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)->EnableDepthTest();
+		mPipeline->SetDynamicState({ VK_DYNAMIC_STATE_VIEWPORT,VK_DYNAMIC_STATE_SCISSOR });
+		mPipeline->SetMultisampleState(VK_SAMPLE_COUNT_4_BIT, VK_FALSE);
+		mPipeline->Create();
+		mImageAvailableSemaphores.resize(mNumBuffer);
+		mSubmitedSemaphores.resize(mNumBuffer);
+		mFrameFences.resize(mNumBuffer);
+
+		mCmdBuffers = device->GetDefaultCmdPool()->AllocateCommandBuffer(swapchain->GetImages().size());
+		ade::AdVKQueue* graphicQueue = device->GetFirstGraphicQueue();
+
+
+		//Geomerty
+		std::vector<ade::AdVertex> vertices;
+		std::vector<uint32_t> indices;
+		ade::AdGeometryUtil::CreateCube(-0.3f, 0.3f, -0.3f, 0.3f, -0.3f, 0.3f, vertices, indices);
+		mCubeMesh = std::make_shared<ade::AdMesh>(vertices, indices);
+
+		//1.acquire swapchain image Semaphore
+		//2.submit Semaphore
+		//3.frame  fence
+
+		VkSemaphoreCreateInfo semaphoreInfo = {
+			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = 0
+		};
+
+		VkFenceCreateInfo fenceInfo = {
+			.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+			.pNext = nullptr,
+			.flags = VK_FENCE_CREATE_SIGNALED_BIT
+		};
+
+
+		for (int i = 0; i < mNumBuffer; i++)
+		{
+			CALL_VK(vkCreateSemaphore(device->GetHandle(), &semaphoreInfo, nullptr, &mImageAvailableSemaphores[i]));
+			CALL_VK(vkCreateSemaphore(device->GetHandle(), &semaphoreInfo, nullptr, &mSubmitedSemaphores[i]));
+			CALL_VK(vkCreateFence(device->GetHandle(), &fenceInfo, nullptr, &mFrameFences[i]));
+		}
 	}
 
 
 	void OnUpdate(float deltaTime) override
 	{
+		ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
+		ade::AdVKSwapchain* swapchain = renderCxt->GetSwapchain();
 
+		float time = std::chrono::duration<float>(std::chrono::steady_clock::now() - mStartTimePoint).count();
+		mPushConstants.matrix = glm::rotate(glm::mat4(1.f), glm::radians(-17.f), glm::vec3(1, 0, 0));
+		mPushConstants.matrix = glm::rotate(mPushConstants.matrix, glm::radians(time * 100.f), glm::vec3(0, 1, 0));
+		//mPushConstants.matrix = glm::ortho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f) * mPushConstants.matrix;//正交投影
+		glm::mat4 projMat = glm::perspective(glm::radians(65.f), swapchain->GetWidth() * 1.f / swapchain->GetHeight(), 0.01f, 100.f);//投影
+		glm::mat4 viewMat = glm::lookAt(glm::vec3{ 0, 0, 1.5f }, glm::vec3{ 0, 0, -1 }, glm::vec3{ 0, 1, 0 });//虚拟相机位置
+
+		mPushConstants.matrix = projMat * viewMat * mPushConstants.matrix;//透视投影
 	}
 
 
 	void OnRender() override
 	{
+		ade::AdRenderContext* renderCxt = ade::AdApplication::GetAppContext()->renderCxt;
+		ade::AdVKDevice* device = renderCxt->GetDevice();
+		ade::AdVKSwapchain* swapchain = renderCxt->GetSwapchain();
 
+		CALL_VK(vkWaitForFences(device->GetHandle(), 1, &mFrameFences[mCurrentBuffer], VK_TRUE, UINT64_MAX));
+		CALL_VK(vkResetFences(device->GetHandle(), 1, &mFrameFences[mCurrentBuffer]));
+
+		//1.acquire swapchain image
+		auto imageIndex = swapchain->AcquireImage(mImageAvailableSemaphores[mCurrentBuffer]);
+
+		VkCommandBuffer cmdBuffer = mCmdBuffers[imageIndex];
+		//2.begin cmdbuffer
+		ade::AdVKCommandPool::BeginCommandBuffer(cmdBuffer);
+		//3.begin renderpass,bind framebuffer
+		mRenderTarget->Begin(cmdBuffer);
+		ade::AdVKFramebuffer* framebuffer = mRenderTarget->GetFrameBuffer();
+
+		//4.bind resource ->pipeline 
+		mPipeline->Bind(cmdBuffer);
+
+		VkViewport viewport = {
+			   .x = 0,
+			   .y = 0,
+			   .width = static_cast<float>(framebuffer->GetWidth()),
+			   .height = static_cast<float>(framebuffer->GetHeight()),
+			   .minDepth = 0.0f,
+			   .maxDepth = 1.0f
+		};
+		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+		VkRect2D scissor = {
+		.offset = { 0, 0 },
+		.extent = { framebuffer->GetWidth(), framebuffer->GetHeight() }
+		};
+		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+		vkCmdPushConstants(cmdBuffer, mPipelineLayout->GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mPushConstants), &mPushConstants);
+		//bind buffers
+		//5.draw
+		mCubeMesh->Draw(cmdBuffer);
+		// 6.end renderpass
+		mRenderTarget->End(cmdBuffer);
+		// 7.end cmdbuffer
+		ade::AdVKCommandPool::EndCommandBuffer(cmdBuffer);
+		// 8.submit cmdbuffer to queue
+		device->GetFirstGraphicQueue()->Submit({ cmdBuffer }, { mImageAvailableSemaphores[mCurrentBuffer] },
+			{ mSubmitedSemaphores[mCurrentBuffer] }, mFrameFences[mCurrentBuffer]);
+		//graphicQueue->WaitIdle();
+		// 9.present
+		swapchain->Present(imageIndex, { mSubmitedSemaphores[mCurrentBuffer] });
+
+
+
+		mCurrentBuffer = (mCurrentBuffer + 1) % mNumBuffer;
 	}
 
 
 	void OnDestroy() override
 	{
-
+		ade::AdRenderContext* renderCxt = ade::AdApplication::GetAppContext()->renderCxt;
+		ade::AdVKDevice* device = renderCxt->GetDevice();
+		vkDeviceWaitIdle(device->GetHandle());
+		mCubeMesh.reset();
+		mCmdBuffers.clear();
+		mPipeline.reset();
+		mPipelineLayout.reset();
+		mRenderTarget.reset();
+		mRenderPass.reset();
+		for (int i = 0; i < mNumBuffer; i++)
+		{
+			VK_D(Semaphore, device->GetHandle(), mImageAvailableSemaphores[i]);
+			VK_D(Semaphore, device->GetHandle(), mSubmitedSemaphores[i]);
+			VK_D(Fence, device->GetHandle(), mFrameFences[i]);
+		}
 	}
+private:
+	std::shared_ptr<ade::AdVKRenderPass> mRenderPass;
+	std::shared_ptr<ade::AdRenderTarget> mRenderTarget;
+	std::shared_ptr<ade::AdVKPipelineLayout> mPipelineLayout;
+	std::shared_ptr<ade::AdVKPipeline> mPipeline;
+	std::vector<VkCommandBuffer> mCmdBuffers;
+	std::shared_ptr<ade::AdMesh> mCubeMesh;
 
+	const uint32_t mNumBuffer = 2;
+	uint32_t mCurrentBuffer = 0;
+	std::vector<VkSemaphore> mImageAvailableSemaphores;
+	std::vector<VkSemaphore> mSubmitedSemaphores;
+	std::vector<VkFence> mFrameFences;
+	PushConstants mPushConstants;
 };
 ade::AdApplication* CreateApplicationEntryPoint()
 {
 	return new SandBoxApp();
 }
-struct PushConstants
-{
-	glm::mat4 matrix = { 1.0f };
-};
 
 
 
-//	std::vector<VkImage> swapchainImages = swapchain->GetImages();
-//	uint32_t swapchainImageSize = swapchainImages.size();
-//	std::vector<std::shared_ptr<ade::AdVKFramebuffer>> framebuffers;
-//
-//	VkExtent3D imageExtent = { swapchain->GetWidth(),swapchain->GetHeight(),1 };
-//
-//	for (int i = 0; i < swapchainImageSize; i++)
-//	{
-//		std::vector<std::shared_ptr<ade::AdVKImage>> images = {
-//			std::make_shared<ade::AdVKImage>(device.get(), device->GetSettings().surfaceFormat,swapchainImages[i] , VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-//			std::make_shared<ade::AdVKImage>(device.get(), depthFormat,                        imageExtent,         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-//		};
-//
-//		framebuffers.push_back(std::make_shared<ade::AdVKFramebuffer>(device.get(), renderPass.get(), images, swapchain->GetWidth(), swapchain->GetHeight()));
-//	}
-//
-//	ade::ShaderLayout shaderLayout = {
-//		.pushConstants = {
-//			{
-//							.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-//							.offset = 0,
-//							.size = sizeof(PushConstants)
-//			}
-//		}
-//	};
-//	auto pipelineLayout = std::make_shared<ade::AdVKPipelineLayout>(device.get(),
-//		AD_RES_SHADER_DIR"00_hello_buffer.vert",
-//		AD_RES_SHADER_DIR"00_hello_buffer.frag",shaderLayout);
-//	auto pipeline = std::make_shared<ade::AdVKPipeline>(device.get(), renderPass.get(), pipelineLayout.get());
-//
-//	std::vector<VkVertexInputAttributeDescription> vertexAttributes = {
-//		{
-//			.location = 0,
-//			.binding = 0,
-//			.format = VK_FORMAT_R32G32B32_SFLOAT,
-//			.offset = offsetof(ade::AdVertex,position)
-//		},
-//		{
-//			.location = 1,
-//			.binding = 0,
-//			.format = VK_FORMAT_R32G32_SFLOAT,
-//			.offset = offsetof(ade::AdVertex,texcoord0)
-//		},
-//		{
-//			.location = 2,
-//			.binding = 0,
-//			.format = VK_FORMAT_R32G32B32_SFLOAT,
-//			.offset = offsetof(ade::AdVertex,normal)
-//		},
-//	};
-//	std::vector<VkVertexInputBindingDescription> vertexBindings = {
-//		{
-//			.binding = 0,
-//			.stride = sizeof(ade::AdVertex),
-//			.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-//		}
-//	};
-//
-//	pipeline->SetVertexInputState(vertexBindings, vertexAttributes);
-//	pipeline->SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);//->EnableDepthTest();
-//	pipeline->SetDynamicState({ VK_DYNAMIC_STATE_VIEWPORT,VK_DYNAMIC_STATE_SCISSOR });
-//	pipeline->Create();
-//
-//	auto cmdPool = std::make_shared<ade::AdVKCommandPool>(device.get(), vkContext->GetPresentQueueFamilyInfo().queueFamilyIndex);
-//	auto cmdBuffers = cmdPool->AllocateCommandBuffer(swapchainImages.size());
-//	ade::AdVKQueue* graphicQueue = device->GetFirstGraphicQueue();
-//
-//	PushConstants pc{};
-//	//Geomerty
-//	std::vector<ade::AdVertex> vertices;
-//	std::vector<uint32_t> indices;
-//	ade::AdGeometryUtil::CreateCube(-0.3f, 0.3f, -0.3f, 0.3f, -0.3f, 0.3f, vertices, indices);
-//	auto vertexBuffer = std::make_shared<ade::AdVKBuffer>(device.get(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-//		sizeof(vertices[0]) * vertices.size(), vertices.data());
-//	auto indexBuffer = std::make_shared<ade::AdVKBuffer>(device.get(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-//		sizeof(indices[0]) * indices.size(), indices.data());
-//
-//	std::vector<VkClearValue> clearValues = {
-//		 {.color = { 0.1f, 0.2f, 0.3f, 1.f }}, {.depthStencil = { 1, 0 } }
-//	};
-//
-//	//1.acquire swapchain image Semaphore
-//	//2.submit Semaphore
-//	//3.frame  fence
-//	const uint32_t numBuffer = 2;
-//	std::vector<VkSemaphore> imageAvailableSemaphores(numBuffer);
-//	std::vector<VkSemaphore> submitedSemaphores(numBuffer);
-//	std::vector<VkFence> frameFences(numBuffer);
-//
-//	VkSemaphoreCreateInfo semaphoreInfo = {
-//		.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-//		.pNext = nullptr,
-//		.flags = 0
-//	};
-//
-//	VkFenceCreateInfo fenceInfo = {
-//		.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-//		.pNext = nullptr,
-//		.flags = VK_FENCE_CREATE_SIGNALED_BIT
-//	};
-//
-//
-//	for (int i = 0; i < numBuffer; i++)
-//	{
-//		CALL_VK(vkCreateSemaphore(device->GetHandle(), &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]));
-//		CALL_VK(vkCreateSemaphore(device->GetHandle(), &semaphoreInfo, nullptr, &submitedSemaphores[i]));
-//		CALL_VK(vkCreateFence(device->GetHandle(), &fenceInfo, nullptr, &frameFences[i]));
-//	}
-//
-//	std::chrono::time_point lastTimePoint = std::chrono::steady_clock::now();
-//
-//	uint32_t currentBuffer = 0;
+
 //
 //	while (!window->ShouldClose())
 //	{
-//		window->PollEvent();
-//		CALL_VK(vkWaitForFences(device->GetHandle(), 1, &frameFences[currentBuffer], VK_TRUE, UINT64_MAX));
-//		CALL_VK(vkResetFences(device->GetHandle(), 1, &frameFences[currentBuffer]));
-//		//1.acquire swapchain image
-//		auto imageIndex = swapchain->AcquireImage(imageAvailableSemaphores[currentBuffer]);
-//
-//		float time = std::chrono::duration<float>(std::chrono::steady_clock::now() - lastTimePoint).count();
-//		pc.matrix = glm::rotate(glm::mat4(1.0f), glm::radians(-17.f), glm::vec3(1, 0, 0));
-//		pc.matrix = glm::rotate(pc.matrix, glm::radians(time * 100.f), glm::vec3(0, 1, 0));
-//		pc.matrix = glm::ortho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f) * pc.matrix;
-//
-//		//2.begin cmdbuffer
-//		ade::AdVKCommandPool::BeginCommandBuffer(cmdBuffers[imageIndex]);
-//		//3.begin renderpass,bind framebuffer
-//		renderPass->Begin(cmdBuffers[imageIndex], framebuffers[imageIndex].get(), clearValues);
-//		//4.bind resource ->pipeline 
-//		pipeline->Bind(cmdBuffers[imageIndex]);
-//
-//		VkViewport viewport = {
-//			   .x = 0,
-//			   .y = 0,
-//			   .width = static_cast<float>(framebuffers[imageIndex]->GetWidth()),
-//			   .height = static_cast<float>(framebuffers[imageIndex]->GetHeight()),
-//			   .minDepth = 0.0f,
-//			   .maxDepth = 1.0f
-//		};
-//		vkCmdSetViewport(cmdBuffers[imageIndex], 0, 1, &viewport);
-//
-//		VkRect2D scissor = {
-//		.offset = { 0, 0 },
-//		.extent = { framebuffers[imageIndex]->GetWidth(), framebuffers[imageIndex]->GetHeight() }
-//		};
-//		vkCmdSetScissor(cmdBuffers[imageIndex], 0, 1, &scissor);
-//	
-//		vkCmdPushConstants(cmdBuffers[imageIndex], pipelineLayout->GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pc), &pc);
-//		//bind buffers
-//		VkBuffer vertexBuffers[] = { vertexBuffer->GetHandle() };
-//		VkDeviceSize offsets[] = { 0 };
-//		vkCmdBindVertexBuffers(cmdBuffers[imageIndex], 0, 1, vertexBuffers, offsets);
-//		vkCmdBindIndexBuffer(cmdBuffers[imageIndex], indexBuffer->GetHandle(), 0,VK_INDEX_TYPE_UINT32);
-//
-//		//5.draw
-//		//vkCmdDraw(cmdBuffers[imageIndex], 3, 1, 0, 0);
-//		vkCmdDrawIndexed(cmdBuffers[imageIndex], indices.size(), 1, 0, 0, 0);
-//		// 6.end renderpass
-//		renderPass->End(cmdBuffers[imageIndex]);
-//		// 7.end cmdbuffer
-//		ade::AdVKCommandPool::EndCommandBuffer(cmdBuffers[imageIndex]);
-//		// 8.submit cmdbuffer to queue
-//
-//		graphicQueue->Submit({ cmdBuffers[imageIndex] }, { imageAvailableSemaphores[currentBuffer] },
-//			{ submitedSemaphores[currentBuffer] }, frameFences[currentBuffer]);
-//		//graphicQueue->WaitIdle();
-//		// 9.present
-//		swapchain->Present(imageIndex, { submitedSemaphores[currentBuffer] });
-//		window->SwapBuffer();
-//		currentBuffer = (currentBuffer + 1) % numBuffer;
+
+
 //	}
 //
 //	for (int i = 0; i < numBuffer; i++)

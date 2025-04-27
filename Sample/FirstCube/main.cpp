@@ -69,8 +69,8 @@ int main()
 			}
 	};
 
-	auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get(), attachments, subpasses);
-	//auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get());
+	//auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get(), attachments, subpasses);
+	auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get());
 
 
 	std::vector<VkImage> swapchainImages = swapchain->GetImages();
@@ -82,8 +82,8 @@ int main()
 	for (int i = 0; i < swapchainImageSize; i++)
 	{
 		std::vector<std::shared_ptr<ade::AdVKImage>> images = {
-			std::make_shared<ade::AdVKImage>(device.get(), device->GetSettings().surfaceFormat,swapchainImages[i] , VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-			std::make_shared<ade::AdVKImage>(device.get(), depthFormat,                        imageExtent,         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+  std::make_shared<ade::AdVKImage>(device.get(), swapchainImages[i], imageExtent, device->GetSettings().surfaceFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
+			std::make_shared<ade::AdVKImage>(device.get(), imageExtent, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
 		};
 
 		framebuffers.push_back(std::make_shared<ade::AdVKFramebuffer>(device.get(), renderPass.get(), images, swapchain->GetWidth(), swapchain->GetHeight()));
