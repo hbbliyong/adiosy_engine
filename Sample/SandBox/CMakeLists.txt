@@ -9,8 +9,8 @@ file(GLOB SOURCES "*.c*")
 set (SHADERS 
     00_hello_triangle.vert
     00_hello_triangle.frag
-    00_hello_buffer.vert
-    00_hello_buffer.frag
+    01_hello_buffer.vert
+    01_hello_buffer.frag
 )
 
 spirv_shaders(
