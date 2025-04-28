@@ -24,6 +24,8 @@ namespace ade
 		bool IsSameGraphicPresentQueueFamily() const { return m_GraphicQueueFamily.queueFamilyIndex == m_PresentQueueFamily.queueFamilyIndex; }
 	private:
 		void CreateInstance();
+		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+		void SetupDebugMessenger();
 		void CreateSurface(AdWindow *window);
 		void SelectPhyDevice();
 		void PrintPhyDeviceInfo(VkPhysicalDeviceProperties& props);
@@ -38,5 +40,7 @@ namespace ade
 		VkPhysicalDeviceMemoryProperties m_PhyDeviceMemProperties;
 		//开启验证有性能损失，正常发布需要关闭
 		bool m_bShouldValidate = true;
+
+		VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
 	};
 }

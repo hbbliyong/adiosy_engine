@@ -2,64 +2,94 @@
 #include "Window/AdGLFWwindow.h"
 namespace ade
 {
+	// 扩展和layer要求
 	const DeviceFeature requestedLayers[] = {
-	{ "VK_LAYER_KHRONOS_validation", true },
+		{ "VK_LAYER_KHRONOS_validation", true },
 	};
+
 	const DeviceFeature requestedExtensions[] = {
 		{ VK_KHR_SURFACE_EXTENSION_NAME, true },
-#ifdef AD_ENGINE_PLATFORM_WIN32
-			{ VK_KHR_WIN32_SURFACE_EXTENSION_NAME, true },
-#elif AD_ENGINE_PLATFORM_MACOS
-			{ VK_MVK_MACOS_SURFACE_EXTENSION_NAME, true },
-#elif AD_ENGINE_PLATFORM_LINUX
-			{ VK_KHR_XCB_SURFACE_EXTENSION_NAME, true },
-#endif
-		{ VK_EXT_DEBUG_REPORT_EXTENSION_NAME, true},
+	#ifdef AD_ENGINE_PLATFORM_WIN32
+		{ VK_KHR_WIN32_SURFACE_EXTENSION_NAME, true },
+	#elif defined(AD_ENGINE_PLATFORM_MACOS)
+		{ VK_MVK_MACOS_SURFACE_EXTENSION_NAME, true },
+	#elif defined(AD_ENGINE_PLATFORM_LINUX)
+		{ VK_KHR_XCB_SURFACE_EXTENSION_NAME, true },
+	#endif
+		{ VK_EXT_DEBUG_UTILS_EXTENSION_NAME, true },
 	};
 
-
-	static VkBool32  VkDebugReportCallback(
-		VkDebugReportFlagsEXT                       flags,
-		VkDebugReportObjectTypeEXT                  objectType,
-		uint64_t                                    object,
-		size_t                                      location,
-		int32_t                                     messageCode,
-		const char* pLayerPrefix,
-		const char* pMessage,
+	// 声明外部回调函数
+	static VKAPI_ATTR VkBool32 VKAPI_CALL VkDebugUtilsMessengerCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData)
 	{
-		if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+		if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
 		{
-			LOG_E("{0}", pMessage);
+			LOG_E("{0}", pCallbackData->pMessage);
 		}
-		if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT || flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+		else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
 		{
-			LOG_W("{0}", pMessage);
+			LOG_W("{0}", pCallbackData->pMessage);
 		}
-		return VK_TRUE;
+		else
+		{
+			LOG_T("{0}", pCallbackData->pMessage);
+		}
+		return VK_FALSE;
 	}
 
 	AdVKGraphicContext::AdVKGraphicContext(AdWindow* window)
 	{
 		CreateInstance();
+		SetupDebugMessenger();
 		CreateSurface(window);
 		SelectPhyDevice();
 	}
 	AdVKGraphicContext:: ~AdVKGraphicContext()
 	{
+		if (m_DebugMessenger != VK_NULL_HANDLE)
+		{
+			auto destroyFunc = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT");
+			if (destroyFunc)
+			{
+				destroyFunc(m_Instance, m_DebugMessenger, nullptr);
+			}
+		}
 		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 		vkDestroyInstance(m_Instance, nullptr);
 	}
 	void  AdVKGraphicContext::CreateInstance()
 	{
-		//1.构建Layer
+	
+
+		// 查询可用的layer
 		uint32_t availableLayerCount;
 		CALL_VK(vkEnumerateInstanceLayerProperties(&availableLayerCount, nullptr));
 		std::vector<VkLayerProperties> availableLayers(availableLayerCount);
 		CALL_VK(vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers.data()));
 
+		// 查询可用的extension
+		uint32_t availableExtensionCount;
+		CALL_VK(vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, nullptr));
+		std::vector<VkExtensionProperties> availableExtensions(availableExtensionCount);
+		CALL_VK(vkEnumerateInstanceExtensionProperties(nullptr, &availableExtensionCount, availableExtensions.data()));
+
+		// glfw要求的extension
+		uint32_t glfwExtensionCount;
+		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+		std::unordered_set<std::string_view> requestedExtensionSet;
+		std::vector<DeviceFeature> allRequestedExtensions(std::begin(requestedExtensions), std::end(requestedExtensions));
+		for (uint32_t i = 0; i < glfwExtensionCount; ++i)
+		{
+			allRequestedExtensions.push_back({ glfwExtensions[i], true });
+		}
+
 		uint32_t enableLayerCount = 0;
-		const char* enableLayers[32];
+		const char* enableLayers[32] = {};
 		if (m_bShouldValidate)
 		{
 			if (!checkDeviceFeatures("Instance Layers", false, availableLayerCount, availableLayers.data(),
@@ -69,78 +99,76 @@ namespace ade
 			}
 		}
 
-		//2.构建extension
-		uint32_t availableExtensionCount;
-		CALL_VK(vkEnumerateInstanceExtensionProperties("", &availableExtensionCount, nullptr));
-		std::vector<VkExtensionProperties> availableExtensions(availableExtensionCount);
-		CALL_VK(vkEnumerateInstanceExtensionProperties("", &availableExtensionCount, availableExtensions.data()));
-
-		//glfw extension
-		uint32_t glfwRequestedExtensionCount;
-		const char** glfwRequestedExtensions = glfwGetRequiredInstanceExtensions(&glfwRequestedExtensionCount);
-		std::unordered_set<std::string> allRequestedExtensionSet;
-		std::vector<DeviceFeature> allRequestedExtensions;
-		for (const auto& item : requestedExtensions)
-		{
-			if (allRequestedExtensionSet.find(item.name) == allRequestedExtensionSet.end())
-			{
-				allRequestedExtensionSet.insert(item.name);
-				allRequestedExtensions.push_back(item);
-			}
-		}
-		for (int i = 0; i < glfwRequestedExtensionCount; i++)
-		{
-			const char* extensionName = glfwRequestedExtensions[i];
-			if (allRequestedExtensionSet.find(extensionName) == allRequestedExtensionSet.end())
-			{
-				allRequestedExtensionSet.insert(extensionName);
-				allRequestedExtensions.push_back({ extensionName, true });
-			}
-		}
-
-		uint32_t enableExtensionCount;
-		const char* enableExtensions[32];
-		if (!checkDeviceFeatures("Instance Extension", true, availableExtensionCount, availableExtensions.data(),
-			ARRAY_SIZE(requestedExtensions), requestedExtensions, &enableExtensionCount, enableExtensions))
+		uint32_t enableExtensionCount = 0;
+		const char* enableExtensions[64] = {};
+		if (!checkDeviceFeatures("Instance Extensions", true, availableExtensionCount, availableExtensions.data(),
+			allRequestedExtensions.size(), allRequestedExtensions.data(), &enableExtensionCount, enableExtensions))
 		{
 			return;
 		}
 
+		uint32_t instanceVersion = 0;
+		vkEnumerateInstanceVersion(&instanceVersion);
+		LOG_I("Driver supports Vulkan version: {0}.{1}.{2}",
+			VK_VERSION_MAJOR(instanceVersion),
+			VK_VERSION_MINOR(instanceVersion),
+			VK_VERSION_PATCH(instanceVersion));
 
-		//3.create instance
+		VkApplicationInfo appInfo = {};
+		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+		appInfo.pApplicationName = "Adiosy_Engine";
+		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.pEngineName = "None";
+		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.apiVersion = VK_API_VERSION_1_3;
 
-		VkApplicationInfo applicationInfo = {
-			.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-			.pNext = nullptr,
-			.pApplicationName = "Adiosy_Engine",
-			.applicationVersion = VK_MAKE_VERSION(1,0,0),
-			.pEngineName = "None",
-			.engineVersion = VK_MAKE_VERSION(1,0,0),
-			.apiVersion = VK_API_VERSION_1_4
-		};
+		VkInstanceCreateInfo createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+		createInfo.pApplicationInfo = &appInfo;
+		createInfo.enabledLayerCount = enableLayerCount;
+		createInfo.ppEnabledLayerNames = enableLayerCount > 0 ? enableLayers : nullptr;
+		createInfo.enabledExtensionCount = enableExtensionCount;
+		createInfo.ppEnabledExtensionNames = enableExtensionCount > 0 ? enableExtensions : nullptr;
 
-		VkDebugReportCallbackCreateInfoEXT debugReportCallbackInfoExt = {
-				.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT,
-				.pNext = nullptr,
-				.flags = VK_DEBUG_REPORT_WARNING_BIT_EXT
-						| VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT
-						| VK_DEBUG_REPORT_DEBUG_BIT_EXT,
-				.pfnCallback = VkDebugReportCallback
-		};
+		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
+		if (m_bShouldValidate)
+		{
+			PopulateDebugMessengerCreateInfo(debugCreateInfo);
+			createInfo.pNext = &debugCreateInfo;
+		}
 
-		VkInstanceCreateInfo instanceInfo = {
-			.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-			.pNext = m_bShouldValidate ? &debugReportCallbackInfoExt : nullptr,
-			.flags = 0,
-			.pApplicationInfo = &applicationInfo,
-			.enabledLayerCount = enableLayerCount,
-			.ppEnabledLayerNames = enableLayerCount > 0 ? enableLayers : nullptr,
-			.enabledExtensionCount = enableExtensionCount,
-			.ppEnabledExtensionNames = enableExtensionCount > 0 ? enableExtensions : nullptr
-		};
+		CALL_VK(vkCreateInstance(&createInfo, nullptr, &m_Instance));
+		LOG_T("{0}: Created Vulkan Instance {1}", __FUNCTION__, (void*)m_Instance);
+	}
+	void AdVKGraphicContext::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+	{
+		createInfo = {};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+		createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+		createInfo.pfnUserCallback = VkDebugUtilsMessengerCallback;
+	}
 
-		CALL_VK(vkCreateInstance(&instanceInfo, nullptr, &m_Instance));
-		LOG_T("{0} : instance : {1}", __FUNCTION__, (void*)m_Instance);
+	void AdVKGraphicContext::SetupDebugMessenger()
+	{
+		if (!m_bShouldValidate) return;
+
+		VkDebugUtilsMessengerCreateInfoEXT createInfo;
+		PopulateDebugMessengerCreateInfo(createInfo);
+
+		auto createFunc = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT");
+		if (createFunc != nullptr)
+		{
+			CALL_VK(createFunc(m_Instance, &createInfo, nullptr, &m_DebugMessenger));
+		}
+		else
+		{
+			LOG_W("Could not load vkCreateDebugUtilsMessengerEXT!");
+		}
 	}
 
 	void AdVKGraphicContext::CreateSurface(AdWindow* window)
@@ -201,7 +229,7 @@ namespace ade
 
 			//query queue
 			uint32_t queueFamilyCount;
-			vkGetPhysicalDeviceQueueFamilyProperties(phyDevices[i], &queueFamilyCount,nullptr);
+			vkGetPhysicalDeviceQueueFamilyProperties(phyDevices[i], &queueFamilyCount, nullptr);
 			std::vector<VkQueueFamilyProperties> queueFamilys(queueFamilyCount);
 			vkGetPhysicalDeviceQueueFamilyProperties(phyDevices[i], &queueFamilyCount, queueFamilys.data());
 			for (int j = 0; j < queueFamilyCount; j++)
@@ -237,7 +265,7 @@ namespace ade
 					maxScore = score;
 					maxScorePhyDeviceIndex = i;
 				}
-			}	
+			}
 		}
 		if (maxScorePhyDeviceIndex < 0)
 		{

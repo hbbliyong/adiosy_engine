@@ -43,9 +43,10 @@ protected:
         ade::AdVKDevice* device = renderCxt->GetDevice();
         ade::AdVKSwapchain* swapchain = renderCxt->GetSwapchain();
 
-        std::vector<ade::Attachment> attachments = {
+        std::vector<ade::Attachment> attachments = 
+        {
             {
-                .format = swapchain->GetSurfaceInfo().surfaceFormat.format,
+                .format = swapchain->GetSurfaceInfo().surfaceFormat.format,//
                 .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                 .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
                 .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -55,7 +56,7 @@ protected:
                 .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
             },
             {
-                .format = device->GetSettings().depthFormat,
+                .format = device->GetSettings().depthFormat,//
                 .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                 .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
                 .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -65,10 +66,11 @@ protected:
                 .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
             }
         };
-        std::vector<ade::RenderSubPass> subpasses = {
+        std::vector<ade::RenderSubPass> subpasses = 
+        {
             {
-                .colorAttachments = { 0 },
-                .depthStencilAttachments = { 1 },
+                .colorAttachments = { 0 },///
+                .depthStencilAttachments = { 1 },///
                 .sampleCount = VK_SAMPLE_COUNT_4_BIT
             }
         };

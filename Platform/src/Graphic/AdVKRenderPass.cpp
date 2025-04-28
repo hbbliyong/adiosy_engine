@@ -63,7 +63,7 @@ namespace ade
                     .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
                     .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                     .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                    .samples = VK_SAMPLE_COUNT_1_BIT,
+                    .samples = subpass.sampleCount,
                     .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
                     });
                 resolveAttachmentRefs[i] = { static_cast<uint32_t>(mAttachments.size() - 1), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
@@ -134,7 +134,7 @@ namespace ade
     }
 
     void AdVKRenderPass::Begin(VkCommandBuffer cmdBuffer, AdVKFramebuffer* frameBuffer, const std::vector<VkClearValue>& clearValues) const
-    {
+    { 
         VkRect2D renderArea = {
                 .offset = { 0, 0 },
                 .extent = { frameBuffer->GetWidth(), frameBuffer->GetHeight() }
@@ -148,7 +148,12 @@ namespace ade
                 .clearValueCount = static_cast<uint32_t>(clearValues.size()),
                 .pClearValues = clearValues.data()
         };
+        assert(cmdBuffer != VK_NULL_HANDLE);
+        assert(beginInfo.renderPass != VK_NULL_HANDLE);
+        assert(beginInfo.framebuffer != VK_NULL_HANDLE);
+
         vkCmdBeginRenderPass(cmdBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
     }
 
     void AdVKRenderPass::End(VkCommandBuffer cmdBuffer) const

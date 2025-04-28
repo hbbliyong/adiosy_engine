@@ -69,8 +69,8 @@ int main()
 			}
 	};
 
-	//auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get(), attachments, subpasses);
-	auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get());
+	auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get(), attachments, subpasses);
+	//auto renderPass = std::make_shared<ade::AdVKRenderPass>(device.get());
 
 
 	std::vector<VkImage> swapchainImages = swapchain->GetImages();
@@ -99,8 +99,8 @@ int main()
 		}
 	};
 	auto pipelineLayout = std::make_shared<ade::AdVKPipelineLayout>(device.get(),
-		AD_RES_SHADER_DIR"00_hello_buffer.vert",
-		AD_RES_SHADER_DIR"00_hello_buffer.frag",shaderLayout);
+		AD_RES_SHADER_DIR"01_hello_buffer.vert",
+		AD_RES_SHADER_DIR"01_hello_buffer.frag",shaderLayout);
 	auto pipeline = std::make_shared<ade::AdVKPipeline>(device.get(), renderPass.get(), pipelineLayout.get());
 
 	std::vector<VkVertexInputAttributeDescription> vertexAttributes = {
@@ -192,7 +192,8 @@ int main()
 		CALL_VK(vkWaitForFences(device->GetHandle(), 1, &frameFences[currentBuffer], VK_TRUE, UINT64_MAX));
 		CALL_VK(vkResetFences(device->GetHandle(), 1, &frameFences[currentBuffer]));
 		//1.acquire swapchain image
-		auto imageIndex = swapchain->AcquireImage(imageAvailableSemaphores[currentBuffer]);
+		int32_t imageIndex; 
+		swapchain->AcquireImage(&imageIndex,imageAvailableSemaphores[currentBuffer]);
 
 		float time = std::chrono::duration<float>(std::chrono::steady_clock::now() - lastTimePoint).count();
 		pc.matrix = glm::rotate(glm::mat4(1.0f), glm::radians(-17.f), glm::vec3(1, 0, 0));
