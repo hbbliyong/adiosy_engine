@@ -1,5 +1,6 @@
 #include "Graphic/AdVKImage.h"
 #include "Graphic/AdVKDevice.h"
+#include "Graphic/AdVKBuffer.h"
 
 namespace ade
 {
@@ -60,5 +61,22 @@ namespace ade
             VK_D(Image, mDevice->GetHandle(), mHandle);
             VK_F(mDevice->GetHandle(), mMemory);
         }
+    }
+    void AdVKImage::CopyFromBuffer(VkCommandBuffer cmdBuffer, AdVKBuffer* buffer)
+    {
+        VkBufferImageCopy region = {
+            .bufferOffset = 0,
+            .bufferRowLength = mExtent.width,
+            .bufferImageHeight = mExtent.height,
+            .imageSubresource = {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .mipLevel = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1
+            },
+            .imageOffset = { 0, 0, 0 },
+            .imageExtent = { mExtent.width, mExtent.height, 1 }
+        };
+        vkCmdCopyBufferToImage(cmdBuffer, buffer->GetHandle(), mHandle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     }
 }

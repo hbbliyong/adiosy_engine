@@ -1,0 +1,53 @@
+#include "Core/Render/AdTexture.h"
+#include "AdApplication.h"
+#include "Render/AdRenderContext.h"
+#include "Graphic/AdVKDevice.h"
+#include "Graphic/AdVKImage.h"
+#include "Graphic/AdVKImageView.h"
+#include "Graphic/AdVKBuffer.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+namespace ade
+{
+	AdTexture::AdTexture(const std::string& filePath)
+	{
+		int numChannel;
+		uint8_t* data = stbi_load(filePath.c_str(), reinterpret_cast<int*>(&mWidth), reinterpret_cast<int*>(&mHeight), &numChannel, STBI_rgb_alpha);
+		if (!data)
+		{
+			LOG_E("Can not load this image :{0}", filePath);
+		}
+		mFormat = VK_FORMAT_R8G8B8A8_UNORM;
+		ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
+		ade::AdVKDevice* device = renderCxt->GetDevice();
+		mImage = std::make_shared<AdVKImage>(device, VkExtent3D{ mWidth,mHeight,1 }, mFormat, VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT);
+		mImageView = std::make_shared<AdVKImageView>(device, mImage->GetHandle(), mFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+
+		CALL_VK(device->CreateSimpleSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, &mSampler));
+
+		//copy data to buffer
+		size_t size = sizeof(uint8_t) * 4 * mWidth * mHeight;
+		std::shared_ptr<AdVKBuffer> stageBuffer = std::make_shared<AdVKBuffer>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			size, data, true);
+
+		//copy buffer to image
+		VkCommandBuffer cmdBuffer = device->CreateAndBeginOneCmdBuffer();
+		mImage->CopyFromBuffer(cmdBuffer, stageBuffer.get());
+		device->SubmitOneCmdBuffer(cmdBuffer);
+
+		stageBuffer.reset();
+
+		stbi_image_free(data);
+	}
+
+	AdTexture::~AdTexture()
+	{
+		ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
+		ade::AdVKDevice* device = renderCxt->GetDevice();
+		VK_D(Sampler, device->GetHandle(), mSampler);
+		mImageView.reset();
+		mImage.reset();
+	}
+
+}

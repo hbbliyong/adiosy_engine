@@ -3,12 +3,15 @@
 namespace ade
 {
 	class AdVKDevice;
+	class AdVKBuffer;
 	class AdVKImage
 	{
 	public:
 		AdVKImage(AdVKDevice* device, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
 		AdVKImage(AdVKDevice* device, VkImage image, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
 		~AdVKImage();
+
+		void CopyFromBuffer(VkCommandBuffer cmdBuffer, AdVKBuffer* buffer);
 
 		VkFormat GetFormat()const { return mFormat; }
 		VkImage GetHandle()const { return mHandle; }

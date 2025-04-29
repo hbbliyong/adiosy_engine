@@ -11,6 +11,8 @@ set (SHADERS
     00_hello_triangle.frag
     01_hello_buffer.vert
     01_hello_buffer.frag
+    02_descriptor_set.vert
+    02_descriptor_set.frag
 )
 
 spirv_shaders(
@@ -20,12 +22,6 @@ spirv_shaders(
         SOURCES
         ${SHADERS}
 )
-# 添加测试内存泄露工具包含目录
-include_directories("C:/Program Files (x86)/Visual Leak Detector/include")
-# 添加测试内存泄露工具库目录
-link_directories("C:/Program Files (x86)/Visual Leak Detector/lib/Win64")
-# 添加测试内存泄露工具全局的预处理器定义
-add_definitions(-D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
 
 add_executable(${LIBRARY_NAME} ${PUBLIC_HEADERS} ${PRIVATE_HEADER} ${SOURCES})
 target_link_libraries(${LIBRARY_NAME}

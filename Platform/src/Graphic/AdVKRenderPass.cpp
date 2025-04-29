@@ -22,7 +22,7 @@ namespace ade
             mSubPasses = { {.colorAttachments = { 0 }, .sampleCount = VK_SAMPLE_COUNT_1_BIT } };
         }
         //2. subpasses
-        std::vector<VkSubpassDescription> subpassDescriptions(mSubPasses.size());
+         std::vector<VkSubpassDescription> subpassDescriptions(mSubPasses.size());
         std::vector < std::vector<VkAttachmentReference>> inputAttachmentRefs(mSubPasses.size());
         std::vector < std::vector<VkAttachmentReference>> colorAttachmentRefs(mSubPasses.size());
         std::vector < std::vector<VkAttachmentReference>> depthStencilAttachmentRefs(mSubPasses.size());
@@ -63,7 +63,7 @@ namespace ade
                     .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
                     .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                     .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                    .samples = subpass.sampleCount,
+                    .samples = VK_SAMPLE_COUNT_1_BIT,
                     .usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
                     });
                 resolveAttachmentRefs[i] = { static_cast<uint32_t>(mAttachments.size() - 1), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
@@ -153,7 +153,6 @@ namespace ade
         assert(beginInfo.framebuffer != VK_NULL_HANDLE);
 
         vkCmdBeginRenderPass(cmdBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
     }
 
     void AdVKRenderPass::End(VkCommandBuffer cmdBuffer) const
