@@ -206,10 +206,11 @@ protected:
 		ade::AdVKSwapchain* swapchain = renderCxt->GetSwapchain();
 
 		float time = std::chrono::duration<float>(std::chrono::steady_clock::now() - mStartTimePoint).count();
-		mInstanceUbo.modelMat = glm::rotate(glm::mat4(1.f), glm::radians(-17.f), glm::vec3(1, 0, 0));
+		mInstanceUbo.modelMat = glm::rotate(glm::mat4(1.f), glm::radians(17.f), glm::vec3(1, 0, 0));
 		mInstanceUbo.modelMat = glm::rotate(mInstanceUbo.modelMat, glm::radians(time * 100.f), glm::vec3(0, 1, 0));
 		//mPushConstants.matrix = glm::ortho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f) * mPushConstants.matrix;
 		mGlobalUbo.projMat = glm::perspective(glm::radians(65.f), swapchain->GetWidth() * 1.f / swapchain->GetHeight(), 0.01f, 100.f);
+		mGlobalUbo.projMat[1][1] *= -1.f;
 		mGlobalUbo.viewMat = glm::lookAt(glm::vec3{ 0, 0, 1.5f }, glm::vec3{ 0, 0, -1 }, glm::vec3{ 0, 1, 0 });
 
 	}

@@ -11,6 +11,7 @@ namespace ade
 		AdVKImage(AdVKDevice* device, VkImage image, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
 		~AdVKImage();
 
+		static bool TransitionLayout(VkCommandBuffer cmdBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout);
 		void CopyFromBuffer(VkCommandBuffer cmdBuffer, AdVKBuffer* buffer);
 
 		VkFormat GetFormat()const { return mFormat; }

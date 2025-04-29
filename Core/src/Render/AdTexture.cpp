@@ -33,7 +33,9 @@ namespace ade
 
 		//copy buffer to image
 		VkCommandBuffer cmdBuffer = device->CreateAndBeginOneCmdBuffer();
+		AdVKImage::TransitionLayout(cmdBuffer, mImage->GetHandle(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		mImage->CopyFromBuffer(cmdBuffer, stageBuffer.get());
+		AdVKImage::TransitionLayout(cmdBuffer, mImage->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		device->SubmitOneCmdBuffer(cmdBuffer);
 
 		stageBuffer.reset();
