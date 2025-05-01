@@ -8,20 +8,19 @@
 #include "Platform/Graphic/AdVKSwapchain.h"
 #include "Platform/Graphic/AdVKRenderPass.h"
 #include "Platform/Graphic/AdVKFrameBuffer.h"
-#include "Platform/Graphic/AdVKPipeline.h"
+
 #include "Platform/Graphic/AdVKCommandBuffer.h"
 #include "Platform/Graphic/AdVKImage.h"
 #include "Platform/Graphic/AdVKImageView.h"
 #include "Platform/Graphic/AdVKBuffer.h"
 #include "Platform/Graphic/AdVKDescriptorSet.h"
-#include "Platform/AdFileUtils.h"
-#include "Platform/AdGeometryUtil.h"
+
 #include "Core/AdEntryPoint.h"
 #include "Core/Render/AdRenderTarget.h"
 #include "Core/Render/AdRenderContext.h"
 #include "Core/Render/AdMesh.h"
 #include "Core/Render/AdTexture.h"
-
+#include "Core/Render/AdRenderer.h"
 
 struct GlobalUbo
 {
@@ -85,6 +84,8 @@ protected:
 		mRenderTarget->SetColorClearValue({ 0.1f, 0.2f, 0.3f, 1.f });
 		mRenderTarget->SetDepthStencilClearValue({ 1, 0 });
 
+		mRenderer = std::make_shared<ade::AdRenderer>();
+
 		std::vector<VkDescriptorSetLayoutBinding> desctLayoutBindings = {
 			{
 				.binding = 0,
@@ -112,45 +113,7 @@ protected:
 			},
 		};
 		mDescriptorSetLayout = std::make_shared<ade::AdVKDescriptorSetLayout>(device, desctLayoutBindings);
-		ade::ShaderLayout shaderLayout = {
-				.descriptorSetLayouts = {mDescriptorSetLayout->GetHandle()}
-		};
-		mPipelineLayout = std::make_shared<ade::AdVKPipelineLayout>(device,
-			AD_RES_SHADER_DIR"02_descriptor_set.vert",
-			AD_RES_SHADER_DIR"02_descriptor_set.frag", shaderLayout);
-		std::vector<VkVertexInputBindingDescription> vertexBindings = {
-				{
-						.binding = 0,
-						.stride = sizeof(ade::AdVertex),
-						.inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-				}
-		};
-		std::vector<VkVertexInputAttributeDescription> vertexAttrs = {
-				{
-						.location = 0,
-						.binding = 0,
-						.format = VK_FORMAT_R32G32B32_SFLOAT,
-						.offset = offsetof(ade::AdVertex, position)
-				},
-				{
-						.location = 1,
-						.binding = 0,
-						.format = VK_FORMAT_R32G32_SFLOAT,
-						.offset = offsetof(ade::AdVertex, texcoord0)
-				},
-				{
-						.location = 2,
-						.binding = 0,
-						.format = VK_FORMAT_R32G32B32_SFLOAT,
-						.offset = offsetof(ade::AdVertex, normal)
-				},
-		};
-		mPipeline = std::make_shared<ade::AdVKPipeline>(device, mRenderPass.get(), mPipelineLayout.get());
-		mPipeline->SetVertexInputState(vertexBindings, vertexAttrs);
-		mPipeline->SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)->EnableDepthTest();
-		mPipeline->SetDynamicState({ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR });
-		mPipeline->SetMultisampleState(VK_SAMPLE_COUNT_4_BIT, VK_FALSE);
-		mPipeline->Create();
+
 
 		std::vector<VkDescriptorPoolSize> poolSizes = {
 			{
@@ -172,26 +135,7 @@ protected:
 		mTexture1 = std::make_shared<ade::AdTexture>(AD_RES_TEXTURE_DIR"R-C.jpeg");
 
 
-		mImageAvailableSemaphores.resize(mNumBuffer);
-		mSubmitedSemaphores.resize(mNumBuffer);
-		mFrameFences.resize(mNumBuffer);
-		VkSemaphoreCreateInfo semaphoreInfo = {
-				.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-				.pNext = nullptr,
-				.flags = 0
-		};
-		VkFenceCreateInfo fenceInfo = {
-				.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-				.pNext = nullptr,
-				.flags = VK_FENCE_CREATE_SIGNALED_BIT
 
-		};
-		for (int i = 0; i < mNumBuffer; i++)
-		{
-			CALL_VK(vkCreateSemaphore(device->GetHandle(), &semaphoreInfo, nullptr, &mImageAvailableSemaphores[i]));
-			CALL_VK(vkCreateSemaphore(device->GetHandle(), &semaphoreInfo, nullptr, &mSubmitedSemaphores[i]));
-			CALL_VK(vkCreateFence(device->GetHandle(), &fenceInfo, nullptr, &mFrameFences[i]));
-		}
 
 		mCmdBuffers = device->GetDefaultCmdPool()->AllocateCommandBuffer(swapchain->GetImages().size());
 		std::vector<ade::AdVertex> vertices;
@@ -221,27 +165,11 @@ protected:
 		ade::AdVKDevice* device = renderCxt->GetDevice();
 		ade::AdVKSwapchain* swapchain = renderCxt->GetSwapchain();
 
-		CALL_VK(vkWaitForFences(device->GetHandle(), 1, &mFrameFences[mCurrentBuffer], VK_TRUE, UINT64_MAX));
-		CALL_VK(vkResetFences(device->GetHandle(), 1, &mFrameFences[mCurrentBuffer]));
-
-		int32_t imageIndex;
-		VkResult ret = swapchain->AcquireImage(&imageIndex, mImageAvailableSemaphores[mCurrentBuffer]);
-		if (ret == VK_ERROR_OUT_OF_DATE_KHR)
+		int32_t imageIndex = -1;
+		bool bShouldUpdateTarget = mRenderer->Begin(&imageIndex);
+		if (bShouldUpdateTarget)
 		{
-			CALL_VK(vkDeviceWaitIdle(device->GetHandle()));
-			VkExtent2D originExtent = { swapchain->GetWidth(), swapchain->GetHeight() };
-			bool bSuc = swapchain->ReCreate();
-
-			VkExtent2D newExtent = { swapchain->GetWidth(), swapchain->GetHeight() };
-			if (bSuc && (originExtent.width != newExtent.width || originExtent.height != newExtent.height))
-			{
-				mRenderTarget->SetExtent(newExtent);
-			}
-			ret = swapchain->AcquireImage(&imageIndex, mImageAvailableSemaphores[mCurrentBuffer]);
-			if (ret != VK_SUCCESS && ret != VK_SUBOPTIMAL_KHR)
-			{
-				LOG_E("Recreate swapchain error: {0}", vk_result_string(ret));
-			}
+			mRenderTarget->SetExtent({ swapchain->GetWidth(),swapchain->GetHeight() });
 		}
 
 		VkCommandBuffer cmdBuffer = mCmdBuffers[imageIndex];
@@ -270,31 +198,20 @@ protected:
 		mInstanceBuffer->WriteData(&mInstanceUbo);
 
 		UpdateDescriptorSets();
-		
-		vkCmdBindDescriptorSets(cmdBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,mPipelineLayout->GetHandle(),
-			0,1,mDescriptorSets.data(),0,nullptr);
+
+		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, mPipelineLayout->GetHandle(),
+			0, 1, mDescriptorSets.data(), 0, nullptr);
 
 		mCubeMesh->Draw(cmdBuffer);
 
 		mRenderTarget->End(cmdBuffer);
 
 		ade::AdVKCommandPool::EndCommandBuffer(cmdBuffer);
-		device->GetFirstGraphicQueue()->Submit({ cmdBuffer }, { mImageAvailableSemaphores[mCurrentBuffer] }, { mSubmitedSemaphores[mCurrentBuffer] }, mFrameFences[mCurrentBuffer]);
-		ret = swapchain->Present(imageIndex, { mSubmitedSemaphores[mCurrentBuffer] });
-		if (ret == VK_SUBOPTIMAL_KHR)
+		bShouldUpdateTarget = mRenderer->End(imageIndex, { cmdBuffer });
+		if (bShouldUpdateTarget)
 		{
-			CALL_VK(vkDeviceWaitIdle(device->GetHandle()));
-			VkExtent2D originExtent = { swapchain->GetWidth(), swapchain->GetHeight() };
-			bool bSuc = swapchain->ReCreate();
-
-			VkExtent2D newExtent = { swapchain->GetWidth(), swapchain->GetHeight() };
-			if (bSuc && (originExtent.width != newExtent.width || originExtent.height != newExtent.height))
-			{
-				mRenderTarget->SetExtent(newExtent);
-			}
+			mRenderTarget->SetExtent({ swapchain->GetWidth(),swapchain->GetHeight() });
 		}
-
-		mCurrentBuffer = (mCurrentBuffer + 1) % mNumBuffer;
 	}
 
 	void OnDestroy() override
@@ -314,12 +231,7 @@ protected:
 		mPipelineLayout.reset();
 		mRenderTarget.reset();
 		mRenderPass.reset();
-		for (int i = 0; i < mNumBuffer; i++)
-		{
-			VK_D(Semaphore, device->GetHandle(), mImageAvailableSemaphores[i]);
-			VK_D(Semaphore, device->GetHandle(), mSubmitedSemaphores[i]);
-			VK_D(Fence, device->GetHandle(), mFrameFences[i]);
-		}
+		mRenderer.reset();
 	}
 	void UpdateDescriptorSets()
 	{
@@ -398,13 +310,13 @@ protected:
 private:
 	std::shared_ptr<ade::AdVKRenderPass> mRenderPass;
 	std::shared_ptr<ade::AdRenderTarget> mRenderTarget;
+	std::shared_ptr<ade::AdRenderer> mRenderer;
 
 	std::shared_ptr<ade::AdVKDescriptorSetLayout> mDescriptorSetLayout;
 	std::shared_ptr<ade::AdVKDescriptorPool> mDescriptorPool;
 	std::vector<VkDescriptorSet> mDescriptorSets;
-								 
-	std::shared_ptr<ade::AdVKPipelineLayout> mPipelineLayout;
-	std::shared_ptr<ade::AdVKPipeline> mPipeline;
+
+
 	std::vector<VkCommandBuffer> mCmdBuffers;
 
 	std::shared_ptr<ade::AdMesh> mCubeMesh;
@@ -414,11 +326,7 @@ private:
 	std::shared_ptr<ade::AdVKBuffer> mInstanceBuffer;
 	std::shared_ptr<ade::AdTexture> mTexture0;
 	std::shared_ptr<ade::AdTexture> mTexture1;
-	const uint32_t mNumBuffer = 2;
-	uint32_t mCurrentBuffer = 0;
-	std::vector<VkSemaphore> mImageAvailableSemaphores;
-	std::vector<VkSemaphore> mSubmitedSemaphores;
-	std::vector<VkFence> mFrameFences;
+
 };
 
 ade::AdApplication* CreateApplicationEntryPoint()

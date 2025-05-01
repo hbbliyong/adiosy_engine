@@ -45,6 +45,12 @@ set_target_properties(spdlog glfw glm PROPERTIES FOLDER "Dependencies")
 
 #stb
 target_include_directories(${LIBRARY_NAME} PUBLIC External/stb)
+
+# 添加 EnTT 头文件路径
+target_include_directories(${LIBRARY_NAME} PUBLIC
+    External/entt/src
+)
+
 #Vulkan
 find_package(Vulkan REQUIRED)
 if(Vulkan_FOUND)
