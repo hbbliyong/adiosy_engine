@@ -36,6 +36,8 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(SPIR-V)
 
+# add_compile_options(/fsanitize=address)
+# add_link_options(/fsanitize=address)
 
 add_subdirectory(Platform)
 add_subdirectory(Core)

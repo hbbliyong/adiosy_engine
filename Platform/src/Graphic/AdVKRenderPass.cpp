@@ -152,7 +152,7 @@ namespace ade
         assert(beginInfo.renderPass != VK_NULL_HANDLE);
         assert(beginInfo.framebuffer != VK_NULL_HANDLE);
 
-        vkCmdBeginRenderPass(cmdBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+      vkCmdBeginRenderPass(cmdBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
     void AdVKRenderPass::End(VkCommandBuffer cmdBuffer) const

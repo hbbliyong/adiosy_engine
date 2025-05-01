@@ -18,13 +18,13 @@ namespace ade
 	{
 		LOG_D("-----------------------------");
 		SetupSurfaceCapabilities();
-		LOG_D("currentExtent : {0} x {1}", m_surfaceInfo.capabilities.currentExtent.width, m_surfaceInfo.capabilities.currentExtent.height);
-		LOG_D("surfaceFormat : {0}", vk_format_string(m_surfaceInfo.surfaceFormat.format));
-		LOG_D("presentMode   : {0}", vk_present_mode_string(m_surfaceInfo.presentMode));
+		LOG_D("currentExtent : {0} x {1}", mSurfaceInfo.capabilities.currentExtent.width, mSurfaceInfo.capabilities.currentExtent.height);
+		LOG_D("surfaceFormat : {0}", vk_format_string(mSurfaceInfo.surfaceFormat.format));
+		LOG_D("presentMode   : {0}", vk_present_mode_string(mSurfaceInfo.presentMode));
 		LOG_D("-----------------------------");
 
 		uint32_t imageCount = m_Device->GetSettings().swapchainImageCount;
-		imageCount = std::clamp(imageCount, m_surfaceInfo.capabilities.minImageCount, m_surfaceInfo.capabilities.maxImageCount);
+		imageCount = std::clamp(imageCount, mSurfaceInfo.capabilities.minImageCount, mSurfaceInfo.capabilities.maxImageCount);
 
 		VkSharingMode imageSharingMode;
 		uint32_t queueFamilyIndexCount;
@@ -50,9 +50,9 @@ namespace ade
 			.flags = 0,
 			.surface = m_Context->GetSurface(),
 			.minImageCount = imageCount,
-			.imageFormat = m_surfaceInfo.surfaceFormat.format,
-			.imageColorSpace = m_surfaceInfo.surfaceFormat.colorSpace,
-			.imageExtent = m_surfaceInfo.capabilities.currentExtent,
+			.imageFormat = mSurfaceInfo.surfaceFormat.format,
+			.imageColorSpace = mSurfaceInfo.surfaceFormat.colorSpace,
+			.imageExtent = mSurfaceInfo.capabilities.currentExtent,
 			.imageArrayLayers = 1,
 			.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			.imageSharingMode = imageSharingMode,
@@ -60,7 +60,7 @@ namespace ade
 			.pQueueFamilyIndices = pQueueFamilyIndices,
 			.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
 			.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-			.presentMode = m_surfaceInfo.presentMode,
+			.presentMode = mSurfaceInfo.presentMode,
 			.clipped = VK_FALSE,
 			.oldSwapchain = oldSwapchain
 		};
@@ -71,7 +71,7 @@ namespace ade
 			return false;
 		}
 		LOG_T("Swapchain {0} : old: {1}, new: {2}, image count: {3}, format: {4}, present mode : {5}", __FUNCTION__, (void*)oldSwapchain, (void*)m_Handle, imageCount,
-			vk_format_string(m_surfaceInfo.surfaceFormat.format), vk_present_mode_string(m_surfaceInfo.presentMode));
+			vk_format_string(mSurfaceInfo.surfaceFormat.format), vk_present_mode_string(mSurfaceInfo.presentMode));
 
 		uint32_t swapchainImageCount;
 		vkGetSwapchainImagesKHR(m_Device->GetHandle(), m_Handle, &swapchainImageCount, nullptr);
@@ -119,7 +119,7 @@ namespace ade
 	void AdVKSwapchain::SetupSurfaceCapabilities()
 	{
 		//capabilities
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_Context->GetPhyDevice(), m_Context->GetSurface(), &m_surfaceInfo.capabilities);
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_Context->GetPhyDevice(), m_Context->GetSurface(), &mSurfaceInfo.capabilities);
 
 		AdVkSettings settings = m_Device->GetSettings();
 		//format
@@ -146,7 +146,7 @@ namespace ade
 		{
 			foundFormatIndex = 0;
 		}
-		m_surfaceInfo.surfaceFormat = formats[foundFormatIndex];
+		mSurfaceInfo.surfaceFormat = formats[foundFormatIndex];
 
 		//present mode
 		uint32_t presentModeCount;
@@ -156,22 +156,25 @@ namespace ade
 			LOG_E("{0} : num of surface presentModeCount is 0", __FUNCTION__);
 			return;
 		}
-		std::vector<VkPresentModeKHR> presentModels(presentModeCount);
-		CALL_VK(vkGetPhysicalDeviceSurfacePresentModesKHR(m_Context->GetPhyDevice(), m_Context->GetSurface(), &presentModeCount, presentModels.data()));
+		std::vector<VkPresentModeKHR> presentModes(presentModeCount);
+		CALL_VK(vkGetPhysicalDeviceSurfacePresentModesKHR(m_Context->GetPhyDevice(), m_Context->GetSurface(), &presentModeCount, presentModes.data()));
 
-		int32_t foundPresentModelIndex = -1;
+		int32_t foundPresentModeIndex = -1;
 		for (int i = 0; i < presentModeCount; i++)
 		{
-			if (presentModels[i] == settings.presentMode)
+			if (presentModes[i] == settings.presentMode)
 			{
-				foundPresentModelIndex = i;
+				foundPresentModeIndex = i;
 				break;
 			}
 		}
-		if (foundPresentModelIndex == -1)
+		if (foundPresentModeIndex >= 0)
 		{
-			foundPresentModelIndex = 0;
+			mSurfaceInfo.presentMode = presentModes[foundPresentModeIndex];
 		}
-		m_surfaceInfo.presentMode = presentModels[foundFormatIndex];
+		else
+		{
+			mSurfaceInfo.presentMode = presentModes[0];
+		}
 	}
 } // namespace ade

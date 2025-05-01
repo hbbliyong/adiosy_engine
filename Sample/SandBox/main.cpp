@@ -76,7 +76,7 @@ protected:
 			{
 				.colorAttachments = { 0 },
 				.depthStencilAttachments = { 1 },
-				.sampleCount = VK_SAMPLE_COUNT_4_BIT
+				//.sampleCount = VK_SAMPLE_COUNT_1_BIT
 			}
 		};
 		mRenderPass = std::make_shared<ade::AdVKRenderPass>(device, attachments, subpasses);
@@ -149,7 +149,7 @@ protected:
 		mPipeline->SetVertexInputState(vertexBindings, vertexAttrs);
 		mPipeline->SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)->EnableDepthTest();
 		mPipeline->SetDynamicState({ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR });
-		mPipeline->SetMultisampleState(VK_SAMPLE_COUNT_4_BIT, VK_FALSE);
+		//mPipeline->SetMultisampleState(VK_SAMPLE_COUNT_4_BIT, VK_FALSE);
 		mPipeline->Create();
 
 		std::vector<VkDescriptorPoolSize> poolSizes = {
@@ -212,7 +212,6 @@ protected:
 		mGlobalUbo.projMat = glm::perspective(glm::radians(65.f), swapchain->GetWidth() * 1.f / swapchain->GetHeight(), 0.01f, 100.f);
 		mGlobalUbo.projMat[1][1] *= -1.f;
 		mGlobalUbo.viewMat = glm::lookAt(glm::vec3{ 0, 0, 1.5f }, glm::vec3{ 0, 0, -1 }, glm::vec3{ 0, 1, 0 });
-
 	}
 
 	void OnRender() override

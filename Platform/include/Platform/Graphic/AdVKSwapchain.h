@@ -29,9 +29,9 @@ namespace ade
 			return  m_images;
 		}
 
-		uint32_t GetWidth()const { return m_surfaceInfo.capabilities.currentExtent.width; }
-		uint32_t GetHeight()const { return m_surfaceInfo.capabilities.currentExtent.height; }
-		const SurfaceInfo& GetSurfaceInfo() const { return m_surfaceInfo; }
+		uint32_t GetWidth()const { return mSurfaceInfo.capabilities.currentExtent.width; }
+		uint32_t GetHeight()const { return mSurfaceInfo.capabilities.currentExtent.height; }
+		const SurfaceInfo& GetSurfaceInfo() const { return mSurfaceInfo; }
 		uint32_t GetCurrentImageIndex() const { return mCurrentImageIdx; }
 	private:
 		void SetupSurfaceCapabilities();
@@ -39,7 +39,7 @@ namespace ade
 		VkSwapchainKHR m_Handle = VK_NULL_HANDLE;
 		AdVKGraphicContext* m_Context;
 		AdVKDevice* m_Device;
-		SurfaceInfo m_surfaceInfo;
+		SurfaceInfo mSurfaceInfo;
 		std::vector<VkImage> m_images;
 	mutable	uint32_t mCurrentImageIdx = -1;
 	};

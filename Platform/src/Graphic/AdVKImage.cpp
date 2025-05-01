@@ -4,8 +4,11 @@
 
 namespace ade
 {
-    AdVKImage::AdVKImage(AdVKDevice* device, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount) :
-        mDevice(device), mExtent(extent), mFormat(format), mUsage(usage)
+    AdVKImage::AdVKImage(AdVKDevice* device, VkExtent3D extent, VkFormat format, VkImageUsageFlags usage, 
+        VkSampleCountFlagBits sampleCount) : mDevice(device),
+        mExtent(extent),
+        mFormat(format),
+        mUsage(usage)
     {
         VkImageTiling tiling = VK_IMAGE_TILING_LINEAR;
         bool isDepthStencilFormat = IsDepthStencilFormat(format);
@@ -14,23 +17,22 @@ namespace ade
             tiling = VK_IMAGE_TILING_OPTIMAL;
         }
 
-        VkImageCreateInfo imageInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .imageType = VK_IMAGE_TYPE_2D,
-            .format = format,
-            .extent = extent,
-            .mipLevels = 1,
-            .arrayLayers = 1,
-            .samples = sampleCount,
-            .tiling = tiling,
-            .usage = usage,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices = nullptr,
-            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
+        VkImageCreateInfo imageInfo = {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .imageType = VK_IMAGE_TYPE_2D,
+                .format = format,
+                .extent = extent,
+                .mipLevels = 1,
+                .arrayLayers = 1,
+                .samples = sampleCount,
+                .tiling = tiling,
+                .usage = usage,
+                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                .queueFamilyIndexCount = 0,
+                .pQueueFamilyIndices = nullptr,
+                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
         };
         CALL_VK(vkCreateImage(mDevice->GetHandle(), &imageInfo, nullptr, &mHandle));
 
@@ -38,12 +40,11 @@ namespace ade
         VkMemoryRequirements memReqs;
         vkGetImageMemoryRequirements(mDevice->GetHandle(), mHandle, &memReqs);
 
-        VkMemoryAllocateInfo allocateInfo =
-        {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .pNext = nullptr,
-            .allocationSize = memReqs.size,
-            .memoryTypeIndex = static_cast<uint32_t>(mDevice->GetMemoryIndex(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memReqs.memoryTypeBits))
+        VkMemoryAllocateInfo allocateInfo = {
+                .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                .pNext = nullptr,
+                .allocationSize = memReqs.size,
+                .memoryTypeIndex = static_cast<uint32_t>(mDevice->GetMemoryIndex(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memReqs.memoryTypeBits))
         };
         CALL_VK(vkAllocateMemory(mDevice->GetHandle(), &allocateInfo, nullptr, &mMemory));
         CALL_VK(vkBindImageMemory(mDevice->GetHandle(), mHandle, mMemory, 0));

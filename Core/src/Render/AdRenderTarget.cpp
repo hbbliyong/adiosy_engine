@@ -63,7 +63,7 @@ namespace ade
 			{
 				Attachment attachment = attachments[j];
 				if (bSwapchainTarget && attachment.finalLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR && attachment.samples == VK_SAMPLE_COUNT_1_BIT)
-				{//image´´½¨
+				{
 					images.push_back(std::make_shared<AdVKImage>(device, swapchainImages[i], VkExtent3D{ mExtent.width, mExtent.height, 1 }, attachment.format, attachment.usage));
 				}
 				else
@@ -71,7 +71,6 @@ namespace ade
 					images.push_back(std::make_shared<AdVKImage>(device, VkExtent3D{ mExtent.width, mExtent.height, 1 }, attachment.format, attachment.usage, attachment.samples));
 				}
 			}
-			//¿í¸ß
 			mFrameBuffers[i] = std::make_shared<AdVKFramebuffer>(device, mRenderPass, images, mExtent.width, mExtent.height);
 			images.clear();
 		}
