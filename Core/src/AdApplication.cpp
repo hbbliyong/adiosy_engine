@@ -1,7 +1,8 @@
-#include "AdApplication.h"
+#include "Core/AdApplication.h"
 #include "AdLog.h"
 #include "AdApplicationContext.h"
 #include "Core/Render/AdRenderContext.h"
+#include "Core/ECS/AdEntity.h"
 namespace ade
 {
 	AdAppContext AdApplication::sAppContext{};
@@ -18,6 +19,7 @@ namespace ade
 		sAppContext.renderCxt = mRenderContext.get();
 
 		OnInit();
+		LoadScene();
 
 		mLastTimePoint = std::chrono::steady_clock::now();
 	}
@@ -48,6 +50,28 @@ namespace ade
 	void AdApplication::ParseArgs(int argc, char* argv[])
 	{
 
+	}
+
+	bool AdApplication::LoadScene(const std::string& filePath)
+	{
+		if (mScene)
+		{
+			UnLoadScene();
+		}
+		mScene = std::make_unique<AdScene>();
+		OnSceneInit(mScene.get());
+		sAppContext.scene = mScene.get();
+		return true;
+	}
+
+	void AdApplication::UnLoadScene()
+	{
+		if (mScene)
+		{
+			OnSceneDestroy(mScene.get());
+			mScene.reset(),
+				sAppContext.scene = nullptr;
+		}
 	}
 
 }

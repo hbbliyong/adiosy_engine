@@ -1,7 +1,7 @@
 #pragma once
 
-#include "AdNode.h"
-#include "AdScene.h"
+#include "Core/ECS/AdNode.h"
+#include "Core/ECS/AdScene.h"
 
 namespace ade
 {

@@ -55,8 +55,7 @@ namespace ade
 		CALL_VK(vkWaitForFences(device->GetHandle(), 1, &mFrameFences[mCurrentBuffer], VK_TRUE, UINT64_MAX));
 		CALL_VK(vkResetFences(device->GetHandle(), 1, &mFrameFences[mCurrentBuffer]));
 
-		int32_t imageIndex;
-		VkResult ret = swapchain->AcquireImage(&imageIndex, mImageAvailableSemaphores[mCurrentBuffer]);
+		VkResult ret = swapchain->AcquireImage(outImageIndex, mImageAvailableSemaphores[mCurrentBuffer]);
 		if (ret == VK_ERROR_OUT_OF_DATE_KHR)
 		{
 			CALL_VK(vkDeviceWaitIdle(device->GetHandle()));
@@ -68,7 +67,7 @@ namespace ade
 			{
 				bShouldUpdateTarget = true;
 			}
-			ret = swapchain->AcquireImage(&imageIndex, mImageAvailableSemaphores[mCurrentBuffer]);
+			ret = swapchain->AcquireImage(outImageIndex, mImageAvailableSemaphores[mCurrentBuffer]);
 			if (ret != VK_SUCCESS && ret != VK_SUBOPTIMAL_KHR)
 			{
 				LOG_E("Recreate swapchain error: {0}", vk_result_string(ret));

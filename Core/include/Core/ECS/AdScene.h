@@ -1,6 +1,6 @@
 #pragma once
 #include "Core/ECS/AdUUID.h"
-#include "entt/src/entt/entity/registry.hpp"
+#include "entt/entity/registry.hpp"
 namespace ade
 {
 	class AdNode;
@@ -9,6 +9,17 @@ namespace ade
 	class AdScene
 	{
 	public:
+		AdScene();
+		~AdScene();
+
+		AdEntity* CreateEntity(const std::string& name = "");
+		AdEntity* CreateEntityWithUUID(const AdUUID& id, const std::string& name = "");
+		void DestroyEntity(const AdEntity* entity);
+		void DestroyAllEntity();
+
+		entt::registry& GetEcsRegistry() { return mEcsRegistry; }
+		AdNode* GetRootNode() const { return mRootNode.get(); }
+		AdEntity* GetEntity(entt::entity enttEntity);
 	private:
 		std::string mName;
 		entt::registry mEcsRegistry;

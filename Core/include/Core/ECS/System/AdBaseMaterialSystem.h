@@ -2,12 +2,17 @@
 
 #include "Core/ECS/AdSystem.h"
 #include "Core/ECS/Component/AdBaseMaterialComponent.h"
-
+#include "AdGraphicContext.h"
 namespace ade
 {
 	class AdVKPipelineLayout;
 	class AdVKPipeline;
 	
+	struct PushConstants
+	{
+		glm::mat4 matrix{ 1.f };
+		uint32_t colorType;
+	};
 	class AdBaseMaterialSystem : public AdMaterialSystem
 	{
 	public:
