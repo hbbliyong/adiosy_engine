@@ -2,6 +2,7 @@
 
 #include "Graphic/AdVKFrameBuffer.h"
 #include "Core/Render/AdRenderContext.h"
+#include "Core/ECS/AdSystem.h"
 namespace ade
 {
     class AdRenderTarget
@@ -27,11 +28,27 @@ namespace ade
         void SetDepthStencilClearValue(VkClearDepthStencilValue depthStencilValue);//«Âø’…Ó∂»
         void SetDepthStencilClearValue(uint32_t attachmentIndex, VkClearDepthStencilValue depthStencilValue);
 
+        template<typename T,typename... Args>
+        void AddMaterialSystem(Args&&... args)
+        {
+            std::shared_ptr<AdMaterialSystem> system = std::make_shared<T>(std::forward<Args>(args)...);
+            system->OnInit(mRenderPass);
+            mMaterialSystemList.push_back(system);
+        }
+
+        void RenderMaterialSystems(VkCommandBuffer cmdBuffer)
+        {
+            for (auto& item : mMaterialSystemList)
+            {
+                item->OnRender(cmdBuffer, this);
+            }
+        }
     private:
         void Init();
         void ReCreate();
     private:
         std::vector<std::shared_ptr<AdVKFramebuffer>> mFrameBuffers;
+        std::vector<std::shared_ptr<AdMaterialSystem>> mMaterialSystemList;
 
         AdVKRenderPass* mRenderPass;
         std::vector<VkClearValue> mClearValues;

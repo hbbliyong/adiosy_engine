@@ -26,6 +26,7 @@ namespace ade
 
 		uint32_t mWidth;
 		uint32_t mHeight;
-		std::vector<std::shared_ptr<AdVKImageView>> mImageViews;
+		std::vector<std::shared_ptr<AdVKImage>> mImage; 
+		std::vector<std::shared_ptr<AdVKImageView>> mImageViews; 
 	};
 } // namespace ade

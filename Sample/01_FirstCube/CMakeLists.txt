@@ -1,4 +1,4 @@
-set(LIBRARY_NAME SandBox)
+set(LIBRARY_NAME 01_FirstCube)
 
 file(GLOB PUBLIC_HEADERS "include/Platform/*.h*")
 file(GLOB PRIVATE_HEADER "src/*.h*")
@@ -9,10 +9,8 @@ file(GLOB SOURCES "*.c*")
 set (SHADERS 
     00_hello_triangle.vert
     00_hello_triangle.frag
-    01_hello_buffer.vert
-    01_hello_buffer.frag
-    02_descriptor_set.vert
-    02_descriptor_set.frag
+    00_hello_buffer.vert
+    00_hello_buffer.frag
 )
 
 spirv_shaders(
@@ -34,5 +32,4 @@ target_link_libraries(${LIBRARY_NAME}
 # set_target_properties(${LIBRARY_NAME} PROPERTIES
 #     VS_DEBUGGER_WORKING_DIRECTORY "${EXECUTABLE_OUTPUT_PATH}"
 # )
-
 

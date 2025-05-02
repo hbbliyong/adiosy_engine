@@ -10,6 +10,12 @@
 # PRIVATE
 #     ${CMAKE_CURRENT_SOURCE_DIR}
 # )
-add_subdirectory(SandBox)
-add_subdirectory(FirstCube)
+# add_subdirectory(SandBox)
+# add_subdirectory(FirstCube)
 
+set(SUBPROJECTS SandBox 01_FirstCube 02_ECS_Entity)
+
+foreach(subproject ${SUBPROJECTS})
+    add_subdirectory(${subproject})
+    set_target_properties(${subproject} PROPERTIES FOLDER "Samples")
+endforeach()

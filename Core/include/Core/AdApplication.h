@@ -24,12 +24,19 @@ namespace ade{
         virtual void OnRender() {};
         virtual void OnDestroy() {};
 
+        virtual void OnSceneInit(AdScene* scene) {}
+        virtual void OnSceneDestroy(AdScene* scene) {}
+
         std::chrono::steady_clock::time_point mStartTimePoint;
         std::chrono::steady_clock::time_point mLastTimePoint;
         std::shared_ptr<AdRenderContext> mRenderContext;
     private:
         void ParseArgs(int argc ,char* argv[]);
+        bool LoadScene(const std::string& filePath = "");
+        void UnLoadScene();
+
         std::unique_ptr<AdWindow> mWindow;
+        std::unique_ptr<AdScene> mScene;
         AppSettings mAppSettings;
 
 

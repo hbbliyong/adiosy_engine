@@ -33,12 +33,23 @@ option(GLFW_BUILD_TESTS OFF)
 option(GLFW_BUILD_EXAMPLES OFF)
 option(GLFW_INSTALL OFF)
 
-add_subdirectory(External/glfw)
+add_subdirectory(External/glfw EXCLUDE_FROM_ALL)
+
 target_link_libraries(${LIBRARY_NAME} PRIVATE glfw)
 
 #glm
 add_subdirectory(External/glm)
 target_link_libraries(${LIBRARY_NAME} PUBLIC glm)
+
+set_target_properties(spdlog glfw glm PROPERTIES FOLDER "Dependencies")
+
+#stb
+target_include_directories(${LIBRARY_NAME} PUBLIC External/stb)
+
+# 添加 EnTT 头文件路径
+target_include_directories(${LIBRARY_NAME} PUBLIC
+    External/entt/src
+)
 
 #Vulkan
 find_package(Vulkan REQUIRED)

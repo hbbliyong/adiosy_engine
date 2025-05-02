@@ -25,11 +25,13 @@ namespace ade
 		VkPipelineCache GetPipelineCache()const { return mPipelineCache; }
 		AdVKQueue* GetFirstPresentQueue() { return  m_PresentQueues.empty() ? nullptr : m_PresentQueues[0].get(); ; }
 		AdVKQueue* GetFirstGraphicQueue() { return  m_GraphicQueues.empty() ? nullptr : m_GraphicQueues[0].get(); ; }
-	AdVKCommandPool* GetDefaultCmdPool() const { return mDefaultCmdPool.get(); }
+		AdVKCommandPool* GetDefaultCmdPool() const { return mDefaultCmdPool.get(); }
 
-		int32_t GetMemoryIndex(VkMemoryPropertyFlags memProps,uint32_t memoryTypeBits) const;
+		int32_t GetMemoryIndex(VkMemoryPropertyFlags memProps, uint32_t memoryTypeBits) const;
 		VkCommandBuffer CreateAndBeginOneCmdBuffer();
 		void SubmitOneCmdBuffer(VkCommandBuffer cmdBuffer);
+
+		VkResult CreateSimpleSampler(VkFilter filter, VkSamplerAddressMode addressMode, VkSampler* outSampler);
 	private:
 		void CreatePipelineCache();
 		void CreateDefaultCmdPool();
