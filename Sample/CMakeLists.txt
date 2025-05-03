@@ -13,7 +13,7 @@
 # add_subdirectory(SandBox)
 # add_subdirectory(FirstCube)
 
-set(SUBPROJECTS SandBox 01_FirstCube 02_ECS_Entity)
+set(SUBPROJECTS SandBox 01_FirstCube 02_ECS_Entity 03_Event_Camera)
 
 foreach(subproject ${SUBPROJECTS})
     add_subdirectory(${subproject})

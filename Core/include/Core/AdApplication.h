@@ -30,15 +30,14 @@ namespace ade{
         std::chrono::steady_clock::time_point mStartTimePoint;
         std::chrono::steady_clock::time_point mLastTimePoint;
         std::shared_ptr<AdRenderContext> mRenderContext;
+        std::unique_ptr<AdWindow> mWindow;
+        std::unique_ptr<AdScene> mScene;
     private:
         void ParseArgs(int argc ,char* argv[]);
         bool LoadScene(const std::string& filePath = "");
         void UnLoadScene();
 
-        std::unique_ptr<AdWindow> mWindow;
-        std::unique_ptr<AdScene> mScene;
         AppSettings mAppSettings;
-
 
         uint64_t mFrameIndex;
         bool bPause = false;

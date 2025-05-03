@@ -1,4 +1,4 @@
-set(LIBRARY_NAME SandBox)
+set(LIBRARY_NAME 03_Event_Camera)
 
 file(GLOB PUBLIC_HEADERS "include/Platform/*.h*")
 file(GLOB PRIVATE_HEADER "src/*.h*")

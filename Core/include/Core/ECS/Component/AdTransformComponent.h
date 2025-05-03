@@ -7,11 +7,11 @@ namespace ade
 	class AdTransformComponent : public AdComponent
 	{
 	public:
-		glm::vec3 position;
-		glm::vec3 rotation;
-		glm::vec3 scale;
+		glm::vec3 position{ 0.f, 0.f, 0.f };
+		glm::vec3 rotation{ 0.f, 0.f, 0.f };  // degree
+		glm::vec3 scale{ 1.f, 1.f, 1.f };
 
-		glm::mat4 GetTransform()const
+		glm::mat4 GetTransform() const
 		{
 			glm::mat4 transMat = glm::translate(glm::mat4(1.f), position);
 			glm::mat4 rotationMat = glm::rotate(glm::mat4(1.f), glm::radians(rotation.x), glm::vec3{ 1, 0, 0 });

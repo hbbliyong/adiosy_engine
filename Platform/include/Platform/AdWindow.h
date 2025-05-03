@@ -1,7 +1,8 @@
 #pragma once
 
 #include "AdEngine.h"
-
+#include "AdGraphicContext.h"
+#include "Platform/Event/AdMouseEvent.h"
 namespace ade
 {
 	class AdWindow
@@ -18,7 +19,14 @@ namespace ade
 	virtual void PollEvent()=0;
 	virtual	void SwapBuffer()=0;
 
-	virtual void* GetImplWindowPointer() const =0;
+	virtual void* GetImplWindowPointer() const = 0;
+
+	virtual void GetMousePos(glm::vec2& mousePos) const = 0;
+	virtual bool IsMouseDown(MouseButton mouseButton = MOUSE_BUTTON_LEFT) const = 0;
+	virtual bool IsMouseUp(MouseButton mouseButton = MOUSE_BUTTON_LEFT) const = 0;
+	virtual bool IsKeyDown(Key key) const = 0;
+	virtual bool IsKeyUp(Key key) const = 0;
+
 	protected:
 		AdWindow() = default;
 	};
