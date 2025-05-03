@@ -31,6 +31,8 @@ namespace ade
 		}
 		glfwMakeContextCurrent(mGLFWwindow);
 
+        SetupWindowCallbacks();
+
 		glfwShowWindow(mGLFWwindow);
 	}
 

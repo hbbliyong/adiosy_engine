@@ -13,6 +13,7 @@
 
 #include "Core/ECS/Component/AdTransformComponent.h"
 #include "Core/ECS/Component/AdMeshComponent.h"
+#include "Core/ECS/Component/AdLookAtCameraComponent.h"
 #include "entt/entity/view.hpp"
 namespace ade
 {
@@ -107,11 +108,19 @@ namespace ade
 		};
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-		glm::mat4 projMat = glm::perspective(glm::radians(65.f), frameBuffer->GetWidth() * 1.0f / frameBuffer->GetHeight(), 0.01f, 100.f);
-		projMat[1][1] *= -1.f;
-		glm::mat4 viewMat = glm::lookAt(glm::vec3{0, 0, 1.5f}, glm::vec3{0, 0, -1}, glm::vec3{0, 1, 0});
-		//glm::mat4 projMat{1.f};
-		//glm::mat4 viewMat{1.f};
+		//glm::mat4 projMat = glm::perspective(glm::radians(65.f), frameBuffer->GetWidth() * 1.0f / frameBuffer->GetHeight(), 0.01f, 100.f);
+		//projMat[1][1] *= -1.f;
+		//glm::mat4 viewMat = glm::lookAt(glm::vec3{0, 0, 1.5f}, glm::vec3{0, 0, -1}, glm::vec3{0, 1, 0});
+		glm::mat4 projMat{1.f};
+		glm::mat4 viewMat{1.f};
+
+		AdEntity* camera = renderTarget->GetCamera();
+		if (AdEntity::HasComponent<AdLookAtCameraComponent>(camera))
+		{
+			auto& cameraComp = camera->GetComponent<AdLookAtCameraComponent>();
+			projMat = cameraComp.GetProjMat();
+			viewMat = cameraComp.GetViewMat();
+		}
 
 		view.each([this, &cmdBuffer, &projMat, &viewMat](const auto& e, const AdTransformComponent& transComp, const AdMeshComponent& meshComp, const AdBaseMaterialComponent& materialComp)
 			{

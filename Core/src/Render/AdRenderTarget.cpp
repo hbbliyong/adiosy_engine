@@ -2,6 +2,7 @@
 #include "AdApplication.h"
 #include "Graphic/AdVKRenderPass.h"
 #include "Graphic/AdVKImage.h"
+#include "Core/ECS/Component/AdLookAtCameraComponent.h"
 namespace ade
 {
 	AdRenderTarget::AdRenderTarget(AdVKRenderPass* renderPass)
@@ -84,6 +85,10 @@ namespace ade
 		{
 			ReCreate();
 			bShouldUpdate = false;
+		}
+		if (AdEntity::HasComponent<AdLookAtCameraComponent>(mCamera))
+		{
+			mCamera->GetComponent<AdLookAtCameraComponent>().SetAspect(mExtent.width * 1.f / mExtent.height);
 		}
 		if (bSwapchainTarget)
 		{

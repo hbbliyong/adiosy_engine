@@ -3,63 +3,68 @@
 #include "Graphic/AdVKFrameBuffer.h"
 #include "Core/Render/AdRenderContext.h"
 #include "Core/ECS/AdSystem.h"
+#include "Core/ECS/AdEntity.h"
 namespace ade
 {
-    class AdRenderTarget
-    {
-    public:
-        AdRenderTarget(AdVKRenderPass* renderPass);
-        AdRenderTarget(AdVKRenderPass* renderPass, uint32_t bufferCount, VkExtent2D extent);
+	class AdRenderTarget
+	{
+	public:
+		AdRenderTarget(AdVKRenderPass* renderPass);
+		AdRenderTarget(AdVKRenderPass* renderPass, uint32_t bufferCount, VkExtent2D extent);
 
-        ~AdRenderTarget();
+		~AdRenderTarget();
 
-        void Begin(VkCommandBuffer cmdBuffer);
-        void End(VkCommandBuffer cmdBuffer);
+		void Begin(VkCommandBuffer cmdBuffer);
+		void End(VkCommandBuffer cmdBuffer);
 
-        AdVKRenderPass* GetRenderPass()const { return mRenderPass; }
-        AdVKFramebuffer* GetFrameBuffer()const { return mFrameBuffers[mCurrentBufferIdx].get(); }
+		AdVKRenderPass* GetRenderPass()const { return mRenderPass; }
+		AdVKFramebuffer* GetFrameBuffer()const { return mFrameBuffers[mCurrentBufferIdx].get(); }
 
 
-        void SetExtent(const VkExtent2D& extent);
-        void SetBufferCount(uint32_t bufferCount);
+		void SetExtent(const VkExtent2D& extent);
+		void SetBufferCount(uint32_t bufferCount);
 
-        void SetColorClearValue(VkClearColorValue colorClearValue);//清空颜色
-        void SetColorClearValue(uint32_t attachmentIndex, VkClearColorValue colorClearValue);
-        void SetDepthStencilClearValue(VkClearDepthStencilValue depthStencilValue);//清空深度
-        void SetDepthStencilClearValue(uint32_t attachmentIndex, VkClearDepthStencilValue depthStencilValue);
+		void SetColorClearValue(VkClearColorValue colorClearValue);//清空颜色
+		void SetColorClearValue(uint32_t attachmentIndex, VkClearColorValue colorClearValue);
+		void SetDepthStencilClearValue(VkClearDepthStencilValue depthStencilValue);//清空深度
+		void SetDepthStencilClearValue(uint32_t attachmentIndex, VkClearDepthStencilValue depthStencilValue);
 
-        template<typename T,typename... Args>
-        void AddMaterialSystem(Args&&... args)
-        {
-            std::shared_ptr<AdMaterialSystem> system = std::make_shared<T>(std::forward<Args>(args)...);
-            system->OnInit(mRenderPass);
-            mMaterialSystemList.push_back(system);
-        }
+		template<typename T, typename... Args>
+		void AddMaterialSystem(Args&&... args)
+		{
+			std::shared_ptr<AdMaterialSystem> system = std::make_shared<T>(std::forward<Args>(args)...);
+			system->OnInit(mRenderPass);
+			mMaterialSystemList.push_back(system);
+		}
 
-        void RenderMaterialSystems(VkCommandBuffer cmdBuffer)
-        {
-            for (auto& item : mMaterialSystemList)
-            {
-                item->OnRender(cmdBuffer, this);
-            }
-        }
-    private:
-        void Init();
-        void ReCreate();
-    private:
-        std::vector<std::shared_ptr<AdVKFramebuffer>> mFrameBuffers;
-        std::vector<std::shared_ptr<AdMaterialSystem>> mMaterialSystemList;
+		void RenderMaterialSystems(VkCommandBuffer cmdBuffer)
+		{
+			for (auto& item : mMaterialSystemList)
+			{
+				item->OnRender(cmdBuffer, this);
+			}
+		}
 
-        AdVKRenderPass* mRenderPass;
-        std::vector<VkClearValue> mClearValues;
-        uint32_t mBufferCount;
-        uint32_t mCurrentBufferIdx = 0;
-        VkExtent2D mExtent;
-        
+		void SetCamera(AdEntity* camera) { mCamera = camera; }
+		AdEntity* GetCamera()const { return mCamera; }
+	private:
+		void Init();
+		void ReCreate();
+	private:
+		std::vector<std::shared_ptr<AdVKFramebuffer>> mFrameBuffers;
+		std::vector<std::shared_ptr<AdMaterialSystem>> mMaterialSystemList;
+		AdEntity* mCamera = nullptr;
 
-        bool bSwapchainTarget = false;
-        bool bBeginTarget = false;
+		AdVKRenderPass* mRenderPass;
+		std::vector<VkClearValue> mClearValues;
+		uint32_t mBufferCount;
+		uint32_t mCurrentBufferIdx = 0;
+		VkExtent2D mExtent;
 
-        bool bShouldUpdate = false;
-    };
+
+		bool bSwapchainTarget = false;
+		bool bBeginTarget = false;
+
+		bool bShouldUpdate = false;
+	};
 } // namespace ade

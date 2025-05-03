@@ -11,6 +11,17 @@ namespace ade
 		AdEntity(const entt::entity& ecsEntity, AdScene* scene) : mEcsEntity(ecsEntity), mScene(scene) {}
 		virtual ~AdEntity() override = default;
 
+        static bool IsValid(AdEntity* entity)
+        {
+            return entity && entity->IsValid();
+        }
+
+        template<typename T>
+        static bool HasComponent(AdEntity* entity)
+        {
+            return IsValid(entity) && entity->HasComponent<T>();
+        }
+
         bool operator==(const AdEntity& other) const
         {
             return mEcsEntity == other.mEcsEntity && mScene == other.mScene;
@@ -27,6 +38,7 @@ namespace ade
         T& AddComponent(Args &&...args)
         {
             T& component = mScene->mEcsRegistry.emplace<T>(mEcsEntity, std::forward<Args>(args)...);
+            component.SetOwner(this);
             return component;
         }
 
