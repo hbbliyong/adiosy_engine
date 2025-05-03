@@ -99,7 +99,27 @@ protected:
 
 	void OnSceneInit(ade::AdScene* scene)override
 	{
+		float x = -1.f;
+		for (int i = 0; i < mSmallCubeSize.x; i++, x += 0.5f)
 		{
+			float y = -1.f;
+			for (int j = 0; j < mSmallCubeSize.y; j++, y += 0.5f)
+			{
+				float z = -3.f;
+				for (int k = 0; k < mSmallCubeSize.z; k++, z += 0.5f)
+				{
+					ade::AdEntity* cube = scene->CreateEntity("Cube");
+					auto& materialComp = cube->AddComponent<ade::AdBaseMaterialComponent>();
+					materialComp.colorType = ade::COLOR_TYPE_NORMAL;
+					auto& meshComp = cube->AddComponent<ade::AdMeshComponent>();
+					meshComp.mMesh = mCubeMesh.get();
+					auto& transComp = cube->GetComponent<ade::AdTransformComponent>();
+					transComp.position = { x, y, z };
+					transComp.scale = { 0.5f, 0.5f, 0.5f };
+				}
+			}
+		}
+		/*{
 			ade::AdEntity* cube = scene->CreateEntity("Cube 0");
 			auto& materialComp = cube->AddComponent<ade::AdBaseMaterialComponent>();
 			materialComp.colorType = ade::COLOR_TYPE_TEXCOORD;
@@ -131,7 +151,7 @@ protected:
 			transComp.scale = { 0.5f, 0.5f, 0.5f };
 			transComp.position = { 1.f, 0.f, 0.0f };
 			transComp.rotation = { 17.f, 30.f, 0.f };
-		}
+		}*/
 	}
 
 	void OnSceneDestroy(ade::AdScene* scene) override
@@ -200,7 +220,7 @@ private:
 
 	std::vector<VkCommandBuffer> mCmdBuffers;
 	std::shared_ptr<ade::AdMesh> mCubeMesh;
-
+	glm::ivec3 mSmallCubeSize{5, 5, 5};
 };
 
 ade::AdApplication* CreateApplicationEntryPoint()

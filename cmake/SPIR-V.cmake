@@ -27,7 +27,10 @@ function(spirv_shaders ret)
         add_custom_command(
                 OUTPUT ${HEADER}
                 COMMAND ${GLSLANG_COMMAND} -V --target-env spirv${_spirvshaders_SPIRV_VERSION} ${GLSL} -o ${HEADER}
-                DEPENDS ${GLSL})
+                DEPENDS ${GLSL}
+                COMMENT "Compiling shader"
+                )
+               
         list(APPEND HEADERS ${HEADER})
     endforeach()
 
