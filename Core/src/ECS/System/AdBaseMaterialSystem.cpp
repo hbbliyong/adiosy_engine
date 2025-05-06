@@ -69,6 +69,9 @@ namespace ade
 		mPipeline->SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)->EnableDepthTest();
 		mPipeline->SetDynamicState({ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR });
 		mPipeline->SetMultisampleState(VK_SAMPLE_COUNT_4_BIT, VK_FALSE);
+		PipelineRasterizationState rasterState{};
+		rasterState.polygonMode = VK_POLYGON_MODE_FILL;
+		mPipeline->SetRasterizationState(rasterState);
 		mPipeline->Create();
 	}
 	void AdBaseMaterialSystem::OnRender(VkCommandBuffer cmdBuffer, AdRenderTarget* renderTarget)
@@ -102,7 +105,7 @@ namespace ade
 		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 		VkRect2D scissor = {
 				.offset = { 0, 0 },
-				.extent = { frameBuffer->GetWidth(), frameBuffer->GetHeight() }
+				.extent = { frameBuffer->GetWidth()/2, frameBuffer->GetHeight() }
 		};
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
