@@ -12,15 +12,15 @@
 #include "Core/ECS/AdScene.h"
 
 #include "Core/ECS/Component/AdTransformComponent.h"
-#include "Core/ECS/Component/AdMeshComponent.h"
+#include "Core/ECS/Component/Material/AdBaseMaterialComponent.h"
 #include "Core/ECS/Component/AdLookAtCameraComponent.h"
+
 #include "entt/entity/view.hpp"
 namespace ade
 {
 	void AdBaseMaterialSystem::OnInit(AdVKRenderPass* renderPass)
 	{
-		ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
-		ade::AdVKDevice* device = renderCxt->GetDevice();
+		ade::AdVKDevice* device = GetDevice();
 
 		ade::ShaderLayout shaderLayout = {
 			.pushConstants =
@@ -69,13 +69,14 @@ namespace ade
 		mPipeline->SetInputAssemblyState(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)->EnableDepthTest();
 		mPipeline->SetDynamicState({ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR });
 		mPipeline->SetMultisampleState(VK_SAMPLE_COUNT_4_BIT, VK_FALSE);
+		PipelineRasterizationState rasterState{};
+		rasterState.polygonMode = VK_POLYGON_MODE_FILL;
+		mPipeline->SetRasterizationState(rasterState);
 		mPipeline->Create();
 	}
 	void AdBaseMaterialSystem::OnRender(VkCommandBuffer cmdBuffer, AdRenderTarget* renderTarget)
 	{
-		ade::AdAppContext* appContext = AdApplication::GetAppContext();
-		ade::AdApplication* app = appContext->app;
-		AdScene* scene = appContext->scene;
+		AdScene* scene = GetScene();
 
 		if (!scene)
 		{
@@ -84,7 +85,7 @@ namespace ade
 
 		entt::registry& reg = scene->GetEcsRegistry();
 
-		auto view = reg.view<AdTransformComponent, AdMeshComponent, AdBaseMaterialComponent>();
+		auto view = reg.view<AdTransformComponent, AdBaseMaterialComponent>();
 		if (view.begin() == view.end())
 		{
 			return;
@@ -104,34 +105,39 @@ namespace ade
 		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 		VkRect2D scissor = {
 				.offset = { 0, 0 },
-				.extent = { frameBuffer->GetWidth(), frameBuffer->GetHeight() }
+				.extent = { frameBuffer->GetWidth()/2, frameBuffer->GetHeight() }
 		};
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-		//glm::mat4 projMat = glm::perspective(glm::radians(65.f), frameBuffer->GetWidth() * 1.0f / frameBuffer->GetHeight(), 0.01f, 100.f);
-		//projMat[1][1] *= -1.f;
-		//glm::mat4 viewMat = glm::lookAt(glm::vec3{0, 0, 1.5f}, glm::vec3{0, 0, -1}, glm::vec3{0, 1, 0});
-		glm::mat4 projMat{1.f};
-		glm::mat4 viewMat{1.f};
 
-		AdEntity* camera = renderTarget->GetCamera();
-		if (AdEntity::HasComponent<AdLookAtCameraComponent>(camera))
-		{
-			auto& cameraComp = camera->GetComponent<AdLookAtCameraComponent>();
-			projMat = cameraComp.GetProjMat();
-			viewMat = cameraComp.GetViewMat();
-		}
+		glm::mat4 projMat=GetProjMat(renderTarget);
+		glm::mat4 viewMat=GetViewMat(renderTarget);
 
-		view.each([this, &cmdBuffer, &projMat, &viewMat](const auto& e, const AdTransformComponent& transComp, const AdMeshComponent& meshComp, const AdBaseMaterialComponent& materialComp)
+		view.each([this, &cmdBuffer, &projMat, &viewMat](const auto& e, const AdTransformComponent& transComp, const AdBaseMaterialComponent& materialComp)
 			{
-				if (meshComp.mMesh)
+				auto meshMaterials = materialComp.GetMeshMaterials();
+				for (const auto& entry : meshMaterials)
 				{
+					AdBaseMaterial* material = entry.first;
+					if (!material)
+					{
+						LOG_W("TODO: default material or error material ?");
+						continue;
+					}
 					PushConstants pushConstants{
-						.matrix = projMat * viewMat * transComp.GetTransform(),
-						.colorType =(uint32_t) materialComp.colorType
+										.matrix = projMat * viewMat * transComp.GetTransform(),
+										.colorType = (uint32_t)material->colorType
 					};
 					vkCmdPushConstants(cmdBuffer, mPipelineLayout->GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pushConstants);
-					meshComp.mMesh->Draw(cmdBuffer);
+
+					for (const auto& meshIndex : entry.second)
+					{
+						AdMesh* mesh = materialComp.GetMesh(meshIndex);
+						if (mesh)
+						{
+							mesh->Draw(cmdBuffer);
+						}
+					}
 				}
 			}
 		);

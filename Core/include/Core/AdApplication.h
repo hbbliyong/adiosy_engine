@@ -17,6 +17,10 @@ namespace ade{
 
             void Pause() { bPause = true; }
             void Resume() { if (bPause)bPause = false; }
+
+    public:
+        float GetStartTimeSecond() const { return std::chrono::duration<float>(std::chrono::steady_clock::now() - mStartTimePoint).count(); }
+        uint64_t GetFrameIndex() const { return mFrameIndex; }
     protected:
         virtual void OnConfiguration(AppSettings* appSettings) {};
         virtual void OnInit() {};

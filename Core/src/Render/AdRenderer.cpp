@@ -97,7 +97,7 @@ namespace ade
 				bShouldUpdateTarget=true;
 			}
 		}
-
+		CALL_VK(vkDeviceWaitIdle(device->GetHandle()));
 		mCurrentBuffer = (mCurrentBuffer + 1) % RENDERER_NUM_BUFFER;
 		return bShouldUpdateTarget;
 	}
