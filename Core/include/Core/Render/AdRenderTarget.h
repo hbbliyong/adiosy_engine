@@ -4,6 +4,7 @@
 #include "Core/Render/AdRenderContext.h"
 #include "Core/ECS/AdSystem.h"
 #include "Core/ECS/AdEntity.h"
+#include "Core/ECS/System/AdMaterialSystem.h"
 namespace ade
 {
 	class AdRenderTarget

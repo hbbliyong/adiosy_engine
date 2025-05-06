@@ -1,5 +1,6 @@
 #include "iostream"
 #include "Platform/AdLog.h"
+#include "Platform/AdFileUtils.h"
 #include "Platform/AdWindow.h"
 #include "Platform/AdGraphicContext.h"
 #include "Platform/Graphic/AdVKGraphicContext.h"
@@ -17,18 +18,22 @@
 #include "Platform/Event/AdEventObserver.h"
 
 #include "Core/AdEntryPoint.h"
+#include "Core/ECS/AdEntity.h"
 #include "Core/Render/AdRenderTarget.h"
 #include "Core/Render/AdRenderContext.h"
 #include "Core/Render/AdMesh.h"
 #include "Core/Render/AdTexture.h"
 #include "Core/Render/AdRenderer.h"
 #include "Core/Render/AdMaterial.h"
+
 #include "Core/ECS/System/AdBaseMaterialSystem.h"
-#include "Core/ECS/AdEntity.h"
+#include "Core/ECS/System/AdUnlitMaterialSystem.h"
+
 #include "Core/ECS/Component/AdMeshComponent.h"
 #include "Core/ECS/Component/AdTransformComponent.h"
 #include "Core/ECS/Component/AdLookAtCameraComponent.h"
 #include "Core/ECS/Component/Material/AdBaseMaterialComponent.h"
+#include "Core/ECS/Component/Material/AdUnlitMaterialComponent.h"
 struct GlobalUbo
 {
 	glm::mat4 projMat{ 1.f };
@@ -91,6 +96,7 @@ protected:
 		mRenderTarget->SetColorClearValue({ 0.1f, 0.2f, 0.3f, 1.f });
 		mRenderTarget->SetDepthStencilClearValue({ 1, 0 });
 		mRenderTarget->AddMaterialSystem<ade::AdBaseMaterialSystem>();
+		mRenderTarget->AddMaterialSystem<ade::AdUnlitMaterialSystem>();
 		mRenderer = std::make_shared<ade::AdRenderer>();
 
 
@@ -118,6 +124,22 @@ protected:
 
 		ade::AdGeometryUtil::CreateCube(-0.1f, 0.1f, -0.1f, 0.1f, -0.1f, 0.1f, vertices, indices);
 		mCubeMesh = std::make_shared<ade::AdMesh>(vertices, indices);
+
+		mDefaultSampler = std::make_shared<ade::AdSampler>(VK_FILTER_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+
+		ade::RGBAColor whiteColor = { 255,255,255,255 };
+		ade::RGBAColor blackColor = { 0,0,0,0 };
+		ade::RGBAColor multiColors[4] = {
+			255,255,255,255,
+			192,192,192,255,
+			192,192,192,255,
+			255,255,255,255,
+		};
+
+		mWhiteTexture = std::make_shared<ade::AdTexture>(1, 1, &whiteColor);
+		mBlackTexture = std::make_shared<ade::AdTexture>(1, 1, &blackColor);
+		mMultiPixelTexture = std::make_shared<ade::AdTexture>(2, 2, multiColors);
+		mFileTexture = std::make_shared<ade::AdTexture>(AD_RES_TEXTURE_DIR"R-C.jpeg");
 	}
 
 	void OnSceneInit(ade::AdScene* scene)override
@@ -129,6 +151,17 @@ protected:
 		auto baseMaterial0 = ade::AdMaterialFactory::GetInstance()->CreateMaterial<ade::AdBaseMaterial>();
 		auto baseMaterial1 = ade::AdMaterialFactory::GetInstance()->CreateMaterial<ade::AdBaseMaterial>();
 		baseMaterial1->colorType = ade::COLOR_TYPE_TEXCOORD;
+
+		mUnlitMaterials[0] = ade::AdMaterialFactory::GetInstance()->CreateMaterial<ade::AdUnlitMaterial>();
+
+		mUnlitMaterials[0]->SetTextureView(ade::UNLIT_MAT_BASE_COLOR_0, mFileTexture.get(), mDefaultSampler.get());
+		mUnlitMaterials[0]->SetTextureView(ade::UNLIT_MAT_BASE_COLOR_1, mMultiPixelTexture.get(), mDefaultSampler.get());
+		mUnlitMaterials[0]->UpdateTextureViewEnable(ade::UNLIT_MAT_BASE_COLOR_0, true);
+		mUnlitMaterials[0]->UpdateTextureViewEnable(ade::UNLIT_MAT_BASE_COLOR_1, true);
+		mUnlitMaterials[0]->UpdateTextureViewUVScale(ade::UNLIT_MAT_BASE_COLOR_1, {2,2});
+		mUnlitMaterials[0]->UpdateTextureViewUVRotation(ade::UNLIT_MAT_BASE_COLOR_1, glm::radians(-60.f));
+		mUnlitMaterials[0]->SetMixValue(0.5f);
+
 		uint32_t index = 0;
 		float x = -2.f;
 		for (int i = 0; i < mSmallCubeSize.x; i++, x += 0.5f)
@@ -140,13 +173,13 @@ protected:
 				for (int k = 0; k < mSmallCubeSize.z; k++, z += 0.5f)
 				{
 					ade::AdEntity* cube = scene->CreateEntity("Cube");
-					auto& materialComp = cube->AddComponent<ade::AdBaseMaterialComponent>();
-					materialComp.AddMesh(mCubeMesh.get(),index==0? baseMaterial0: baseMaterial1);
-				
+					auto& materialComp = cube->AddComponent<ade::AdUnlitMaterialComponent>();
+					materialComp.AddMesh(mCubeMesh.get(), mUnlitMaterials[0]);
+
 					auto& transComp = cube->GetComponent<ade::AdTransformComponent>();
 					transComp.position = { x, y, z };
 				}
-				index=(index+1) %2;
+				index = (index + 1) % 2;
 			}
 		}
 		/*{
@@ -234,17 +267,6 @@ protected:
 				}
 			}
 		}
-		//ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
-		//ade::AdVKSwapchain* swapchain = renderCxt->GetSwapchain();
-
-		//float time = std::chrono::duration<float>(std::chrono::steady_clock::now() - mStartTimePoint).count();
-		//mInstanceUbo.modelMat = glm::rotate(glm::mat4(1.f), glm::radians(17.f), glm::vec3(1, 0, 0));
-		//mInstanceUbo.modelMat = glm::rotate(mInstanceUbo.modelMat, glm::radians(time * 100.f), glm::vec3(0, 1, 0));
-		////mPushConstants.matrix = glm::ortho(-1.f, 1.f, -1.f, 1.f, -1.f, 1.f) * mPushConstants.matrix;
-		//mGlobalUbo.projMat = glm::perspective(glm::radians(65.f), swapchain->GetWidth() * 1.f / swapchain->GetHeight(), 0.01f, 100.f);
-		//mGlobalUbo.projMat[1][1] *= -1.f;
-		//mGlobalUbo.viewMat = glm::lookAt(glm::vec3{ 0, 0, 1.5f }, glm::vec3{ 0, 0, -1 }, glm::vec3{ 0, 1, 0 });
-
 	}
 
 	void OnRender() override
@@ -283,6 +305,13 @@ protected:
 		mRenderTarget.reset();
 		mRenderPass.reset();
 		mRenderer.reset();
+
+
+		mWhiteTexture.reset();
+		mBlackTexture.reset();
+		mMultiPixelTexture.reset();
+		mFileTexture.reset();
+		mDefaultSampler.reset();
 	}
 
 private:
@@ -293,7 +322,15 @@ private:
 
 	std::vector<VkCommandBuffer> mCmdBuffers;
 	std::shared_ptr<ade::AdMesh> mCubeMesh;
+
+	std::shared_ptr<ade::AdTexture> mWhiteTexture;
+	std::shared_ptr<ade::AdTexture> mBlackTexture;
+	std::shared_ptr<ade::AdTexture> mMultiPixelTexture;
+	std::shared_ptr<ade::AdTexture> mFileTexture;
+	std::shared_ptr<ade::AdSampler> mDefaultSampler;
 	glm::ivec3 mSmallCubeSize{10, 10, 10};
+
+	std::vector<ade::AdUnlitMaterial*> mUnlitMaterials{1};
 
 	bool bFirstMouseDrag = true;
 	glm::vec2 mLastMousePos;

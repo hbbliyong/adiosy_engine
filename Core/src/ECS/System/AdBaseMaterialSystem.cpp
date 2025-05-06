@@ -12,15 +12,15 @@
 #include "Core/ECS/AdScene.h"
 
 #include "Core/ECS/Component/AdTransformComponent.h"
-#include "Core/ECS/Component/AdMeshComponent.h"
+#include "Core/ECS/Component/Material/AdBaseMaterialComponent.h"
 #include "Core/ECS/Component/AdLookAtCameraComponent.h"
+
 #include "entt/entity/view.hpp"
 namespace ade
 {
 	void AdBaseMaterialSystem::OnInit(AdVKRenderPass* renderPass)
 	{
-		ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
-		ade::AdVKDevice* device = renderCxt->GetDevice();
+		ade::AdVKDevice* device = GetDevice();
 
 		ade::ShaderLayout shaderLayout = {
 			.pushConstants =
@@ -73,9 +73,7 @@ namespace ade
 	}
 	void AdBaseMaterialSystem::OnRender(VkCommandBuffer cmdBuffer, AdRenderTarget* renderTarget)
 	{
-		ade::AdAppContext* appContext = AdApplication::GetAppContext();
-		ade::AdApplication* app = appContext->app;
-		AdScene* scene = appContext->scene;
+		AdScene* scene = GetScene();
 
 		if (!scene)
 		{
@@ -109,16 +107,8 @@ namespace ade
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
 
-		glm::mat4 projMat{1.f};
-		glm::mat4 viewMat{1.f};
-
-		AdEntity* camera = renderTarget->GetCamera();
-		if (AdEntity::HasComponent<AdLookAtCameraComponent>(camera))
-		{
-			auto& cameraComp = camera->GetComponent<AdLookAtCameraComponent>();
-			projMat = cameraComp.GetProjMat();
-			viewMat = cameraComp.GetViewMat();
-		}
+		glm::mat4 projMat=GetProjMat(renderTarget);
+		glm::mat4 viewMat=GetViewMat(renderTarget);
 
 		view.each([this, &cmdBuffer, &projMat, &viewMat](const auto& e, const AdTransformComponent& transComp, const AdBaseMaterialComponent& materialComp)
 			{

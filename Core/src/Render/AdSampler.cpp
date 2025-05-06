@@ -4,8 +4,8 @@
 #include "Platform/Graphic/AdVKDevice.h"
 namespace ade
 {
-
-	AdSampler::AdSampler(VkFilter filter /*= VK_FILTER_LINEAR*/, VkSamplerAddressMode adderssMode /*= VK_SAMPLER_ADDRESS_MODE_REPEAT*/)
+	AdSampler::AdSampler(VkFilter filter /*= VK_FILTER_LINEAR*/, VkSamplerAddressMode addressMode /*= VK_SAMPLER_ADDRESS_MODE_REPEAT*/)
+		:mFilter(filter), mAddressMode(addressMode)
 	{
 		ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
 		ade::AdVKDevice* device = renderCxt->GetDevice();

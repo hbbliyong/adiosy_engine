@@ -19,14 +19,39 @@ namespace ade
 			LOG_E("Can not load this image :{0}", filePath);
 		}
 		mFormat = VK_FORMAT_R8G8B8A8_UNORM;
+	
+		//copy data to buffer
+		size_t size = sizeof(uint8_t) * 4 * mWidth * mHeight;
+		CreateImage(size, data);
+
+		stbi_image_free(data);
+	}
+
+	AdTexture::AdTexture(uint32_t width, uint32_t height, RGBAColor* pixels):
+		mWidth(width),mHeight(height)
+	{
+		mFormat = VK_FORMAT_R8G8B8A8_UNORM;
+		size_t size = sizeof(uint8_t) * 4 * mWidth * mHeight;
+		CreateImage(size, pixels);
+	}
+
+	AdTexture::~AdTexture()
+	{
 		ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
 		ade::AdVKDevice* device = renderCxt->GetDevice();
-		mImage = std::make_shared<AdVKImage>(device, VkExtent3D{ mWidth,mHeight,1 }, mFormat, VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT);
+
+		mImageView.reset();
+		mImage.reset();
+	}
+
+	void AdTexture::CreateImage(size_t size, void* data)
+	{
+		ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
+		ade::AdVKDevice* device = renderCxt->GetDevice();
+		mImage = std::make_shared<AdVKImage>(device, VkExtent3D{ mWidth,mHeight,1 }, mFormat, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT);
 		mImageView = std::make_shared<AdVKImageView>(device, mImage->GetHandle(), mFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
 
-		//copy data to buffer
-		size_t size = sizeof(uint8_t) * 4 * mWidth * mHeight;
 		std::shared_ptr<AdVKBuffer> stageBuffer = std::make_shared<AdVKBuffer>(device, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			size, data, true);
 
@@ -38,17 +63,6 @@ namespace ade
 		device->SubmitOneCmdBuffer(cmdBuffer);
 
 		stageBuffer.reset();
-
-		stbi_image_free(data);
-	}
-
-	AdTexture::~AdTexture()
-	{
-		ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
-		ade::AdVKDevice* device = renderCxt->GetDevice();
-
-		mImageView.reset();
-		mImage.reset();
 	}
 
 }
