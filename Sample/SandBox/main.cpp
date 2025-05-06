@@ -22,11 +22,13 @@
 #include "Core/Render/AdMesh.h"
 #include "Core/Render/AdTexture.h"
 #include "Core/Render/AdRenderer.h"
+#include "Core/Render/AdMaterial.h"
 #include "Core/ECS/System/AdBaseMaterialSystem.h"
 #include "Core/ECS/AdEntity.h"
 #include "Core/ECS/Component/AdMeshComponent.h"
 #include "Core/ECS/Component/AdTransformComponent.h"
 #include "Core/ECS/Component/AdLookAtCameraComponent.h"
+#include "Core/ECS/Component/Material/AdBaseMaterialComponent.h"
 struct GlobalUbo
 {
 	glm::mat4 projMat{ 1.f };
@@ -113,7 +115,8 @@ protected:
 
 		std::vector<ade::AdVertex> vertices;
 		std::vector<uint32_t> indices;
-		ade::AdGeometryUtil::CreateCube(-0.3f, 0.3f, -0.3f, 0.3f, -0.3f, 0.3f, vertices, indices);
+
+		ade::AdGeometryUtil::CreateCube(-0.1f, 0.1f, -0.1f, 0.1f, -0.1f, 0.1f, vertices, indices);
 		mCubeMesh = std::make_shared<ade::AdMesh>(vertices, indices);
 	}
 
@@ -123,10 +126,14 @@ protected:
 		camera->AddComponent<ade::AdLookAtCameraComponent>();
 		mRenderTarget->SetCamera(camera);
 
-		float x = -1.f;
+		auto baseMaterial0 = ade::AdMaterialFactory::GetInstance()->CreateMaterial<ade::AdBaseMaterial>();
+		auto baseMaterial1 = ade::AdMaterialFactory::GetInstance()->CreateMaterial<ade::AdBaseMaterial>();
+		baseMaterial1->colorType = ade::COLOR_TYPE_TEXCOORD;
+		uint32_t index = 0;
+		float x = -2.f;
 		for (int i = 0; i < mSmallCubeSize.x; i++, x += 0.5f)
 		{
-			float y = -1.f;
+			float y = -2.f;
 			for (int j = 0; j < mSmallCubeSize.y; j++, y += 0.5f)
 			{
 				float z = -3.f;
@@ -134,13 +141,12 @@ protected:
 				{
 					ade::AdEntity* cube = scene->CreateEntity("Cube");
 					auto& materialComp = cube->AddComponent<ade::AdBaseMaterialComponent>();
-					materialComp.colorType = ade::COLOR_TYPE_NORMAL;
-					auto& meshComp = cube->AddComponent<ade::AdMeshComponent>();
-					meshComp.mMesh = mCubeMesh.get();
+					materialComp.AddMesh(mCubeMesh.get(),index==0? baseMaterial0: baseMaterial1);
+				
 					auto& transComp = cube->GetComponent<ade::AdTransformComponent>();
 					transComp.position = { x, y, z };
-					transComp.scale = { 0.5f, 0.5f, 0.5f };
 				}
+				index=(index+1) %2;
 			}
 		}
 		/*{
@@ -287,7 +293,7 @@ private:
 
 	std::vector<VkCommandBuffer> mCmdBuffers;
 	std::shared_ptr<ade::AdMesh> mCubeMesh;
-	glm::ivec3 mSmallCubeSize{5, 5, 5};
+	glm::ivec3 mSmallCubeSize{10, 10, 10};
 
 	bool bFirstMouseDrag = true;
 	glm::vec2 mLastMousePos;

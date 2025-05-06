@@ -24,7 +24,6 @@ namespace ade
 		mImage = std::make_shared<AdVKImage>(device, VkExtent3D{ mWidth,mHeight,1 }, mFormat, VK_BUFFER_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT);
 		mImageView = std::make_shared<AdVKImageView>(device, mImage->GetHandle(), mFormat, VK_IMAGE_ASPECT_COLOR_BIT);
 
-		CALL_VK(device->CreateSimpleSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, &mSampler));
 
 		//copy data to buffer
 		size_t size = sizeof(uint8_t) * 4 * mWidth * mHeight;
@@ -47,7 +46,7 @@ namespace ade
 	{
 		ade::AdRenderContext* renderCxt = AdApplication::GetAppContext()->renderCxt;
 		ade::AdVKDevice* device = renderCxt->GetDevice();
-		VK_D(Sampler, device->GetHandle(), mSampler);
+
 		mImageView.reset();
 		mImage.reset();
 	}

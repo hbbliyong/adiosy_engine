@@ -84,7 +84,7 @@ namespace ade
 
 		entt::registry& reg = scene->GetEcsRegistry();
 
-		auto view = reg.view<AdTransformComponent, AdMeshComponent, AdBaseMaterialComponent>();
+		auto view = reg.view<AdTransformComponent, AdBaseMaterialComponent>();
 		if (view.begin() == view.end())
 		{
 			return;
@@ -108,9 +108,7 @@ namespace ade
 		};
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-		//glm::mat4 projMat = glm::perspective(glm::radians(65.f), frameBuffer->GetWidth() * 1.0f / frameBuffer->GetHeight(), 0.01f, 100.f);
-		//projMat[1][1] *= -1.f;
-		//glm::mat4 viewMat = glm::lookAt(glm::vec3{0, 0, 1.5f}, glm::vec3{0, 0, -1}, glm::vec3{0, 1, 0});
+
 		glm::mat4 projMat{1.f};
 		glm::mat4 viewMat{1.f};
 
@@ -122,16 +120,31 @@ namespace ade
 			viewMat = cameraComp.GetViewMat();
 		}
 
-		view.each([this, &cmdBuffer, &projMat, &viewMat](const auto& e, const AdTransformComponent& transComp, const AdMeshComponent& meshComp, const AdBaseMaterialComponent& materialComp)
+		view.each([this, &cmdBuffer, &projMat, &viewMat](const auto& e, const AdTransformComponent& transComp, const AdBaseMaterialComponent& materialComp)
 			{
-				if (meshComp.mMesh)
+				auto meshMaterials = materialComp.GetMeshMaterials();
+				for (const auto& entry : meshMaterials)
 				{
+					AdBaseMaterial* material = entry.first;
+					if (!material)
+					{
+						LOG_W("TODO: default material or error material ?");
+						continue;
+					}
 					PushConstants pushConstants{
-						.matrix = projMat * viewMat * transComp.GetTransform(),
-						.colorType =(uint32_t) materialComp.colorType
+										.matrix = projMat * viewMat * transComp.GetTransform(),
+										.colorType = (uint32_t)material->colorType
 					};
 					vkCmdPushConstants(cmdBuffer, mPipelineLayout->GetHandle(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pushConstants);
-					meshComp.mMesh->Draw(cmdBuffer);
+
+					for (const auto& meshIndex : entry.second)
+					{
+						AdMesh* mesh = materialComp.GetMesh(meshIndex);
+						if (mesh)
+						{
+							mesh->Draw(cmdBuffer);
+						}
+					}
 				}
 			}
 		);

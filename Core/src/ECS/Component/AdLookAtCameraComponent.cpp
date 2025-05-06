@@ -7,6 +7,7 @@ namespace ade
 	const glm::mat4& AdLookAtCameraComponent::GetProjMat()
 	{
 		mProjMat = glm::perspective(glm::radians(mFov), mAspect, mNearPlane, mFarPlane);
+		mProjMat[1][1] *= -1.0f;
 		return mProjMat;
 	}
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/ECS/AdSystem.h"
-#include "Core/ECS/Component/AdBaseMaterialComponent.h"
+#include "Core/ECS/Component/Material/AdBaseMaterialComponent.h"
 #include "AdGraphicContext.h"
 namespace ade
 {

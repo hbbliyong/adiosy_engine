@@ -13,6 +13,8 @@ set (SHADERS
     01_hello_buffer.frag
     02_descriptor_set.vert
     02_descriptor_set.frag
+    03_unlit_material.vert
+    03_unlit_material.frag
 )
 
 spirv_shaders(
